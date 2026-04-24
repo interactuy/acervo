@@ -1,26 +1,119 @@
 @import "tailwindcss";
+@import "mapbox-gl/dist/mapbox-gl.css";
+@import "../styles/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Typography: font-sans is DM Sans for UI/body; font-serif is Newsreader for editorial headings. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-newsreader);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-dm-sans), Arial, Helvetica, sans-serif;
+  min-width: 320px;
+  text-rendering: optimizeLegibility;
+}
+
+.font-serif {
+  font-optical-sizing: auto;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+a {
+  text-underline-offset: 4px;
+}
+
+@keyframes home-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(48px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.home-card-rise {
+  animation: home-card-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes home-hero-image {
+  0% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  33% {
+    opacity: 1;
+  }
+
+  45% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+}
+
+.home-hero-image {
+  animation: home-hero-image 18s ease-in-out infinite;
+  opacity: 0;
+}
+
+.home-hero-image:first-child {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-card-rise {
+    animation: none;
+  }
+
+  .home-hero-image {
+    animation: none;
+  }
+
+  .home-hero-image:not(:first-child) {
+    opacity: 0;
+  }
 }
