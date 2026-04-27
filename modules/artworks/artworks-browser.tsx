@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SlidersHorizontal, Search, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, Search, X } from "lucide-react";
 import { ArtworkCard } from "@/components/acervo/artwork-card";
 import { Input } from "@/components/ui/input";
 import type { ArtworkWithArtist } from "@/types/acervo";
@@ -51,6 +51,7 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
   const [techniqueFilter, setTechniqueFilter] = useState(ALL_VALUE);
   const [exhibitionFilter, setExhibitionFilter] = useState(ALL_VALUE);
   const [sortMode, setSortMode] = useState<SortMode>("inventory");
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   const artists = useMemo(() => {
     const artistMap = new Map<string, string>();
@@ -173,14 +174,16 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
     yearFilter,
   ]);
 
-  const hasActiveFilters =
-    query.trim() ||
-    artistFilter !== ALL_VALUE ||
-    museumFilter !== ALL_VALUE ||
-    yearFilter !== ALL_VALUE ||
-    techniqueFilter !== ALL_VALUE ||
-    exhibitionFilter !== ALL_VALUE ||
-    sortMode !== "inventory";
+  const activeFilterCount = [
+    query.trim(),
+    artistFilter !== ALL_VALUE,
+    museumFilter !== ALL_VALUE,
+    yearFilter !== ALL_VALUE,
+    techniqueFilter !== ALL_VALUE,
+    exhibitionFilter !== ALL_VALUE,
+    sortMode !== "inventory",
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   function clearFilters() {
     setQuery("");
@@ -194,94 +197,139 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
 
   return (
     <section className="mt-9">
-      <div className="rounded-[1.4rem] bg-card/74 p-4 shadow-[0_22px_80px_rgba(23,25,22,0.07)] sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-          <div className="flex min-h-14 flex-1 items-center gap-3 rounded-[1rem] bg-background/78 px-4">
-            <Search className="size-5 shrink-0 text-primary/64" aria-hidden="true" />
-            <label htmlFor="artworks-search" className="sr-only">
-              Buscar obras
-            </label>
-            <Input
-              id="artworks-search"
-              type="search"
-              value={query}
-              placeholder="Buscar por obra, artista, tecnica o inventario"
-              className="h-12 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 font-medium text-primary">
-              <SlidersHorizontal className="size-4" aria-hidden="true" />
-              {filteredArtworks.length} de {artworks.length}
+      <div className="rounded-[1.2rem] bg-card/74 p-3 shadow-[0_22px_80px_rgba(23,25,22,0.07)] sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            aria-expanded={isFilterPanelOpen}
+            aria-controls="artworks-filter-panel"
+            className="inline-flex min-h-[3.25rem] w-full items-center justify-between gap-3 rounded-[1rem] bg-background/78 px-4 py-2 text-left transition hover:bg-background sm:max-w-md"
+            onClick={() => setIsFilterPanelOpen((isOpen) => !isOpen)}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-foreground">
+                  Buscar y filtrar
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {filteredArtworks.length} de {artworks.length}
+                  {hasActiveFilters
+                    ? ` · ${activeFilterCount} ${
+                        activeFilterCount === 1
+                          ? "filtro activo"
+                          : "filtros activos"
+                      }`
+                    : ""}
+                </span>
+              </span>
             </span>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-2 font-medium text-foreground transition hover:bg-muted/78"
-                onClick={clearFilters}
-              >
-                <X className="size-4" aria-hidden="true" />
-                Limpiar
-              </button>
-            )}
-          </div>
+            <ChevronDown
+              className={`size-4 shrink-0 text-primary transition ${
+                isFilterPanelOpen ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-muted px-4 text-sm font-medium text-foreground transition hover:bg-muted/78"
+              onClick={clearFilters}
+            >
+              <X className="size-4" aria-hidden="true" />
+              Limpiar
+            </button>
+          )}
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <FilterSelect
-            label="Artista"
-            value={artistFilter}
-            onChange={setArtistFilter}
-            options={artists.map(([id, name]) => ({ label: name, value: id }))}
-          />
-          <FilterSelect
-            label="Museo"
-            value={museumFilter}
-            onChange={setMuseumFilter}
-            options={museums.map(([id, name]) => ({ label: name, value: id }))}
-          />
-          <FilterSelect
-            label="Año"
-            value={yearFilter}
-            onChange={setYearFilter}
-            options={[
-              ...years.map((year) => ({ label: year, value: year })),
-              { label: "Sin fecha", value: EMPTY_YEAR_VALUE },
-            ]}
-          />
-          <FilterSelect
-            label="Técnica"
-            value={techniqueFilter}
-            onChange={setTechniqueFilter}
-            options={techniques.map((technique) => ({
-              label: technique,
-              value: technique,
-            }))}
-          />
-          <FilterSelect
-            label="Exhibición"
-            value={exhibitionFilter}
-            onChange={setExhibitionFilter}
-            options={exhibitionStatuses.map((status) => ({
-              label: status === "No" ? "No exhibida" : status,
-              value: status,
-            }))}
-          />
-          <FilterSelect
-            label="Orden"
-            value={sortMode}
-            onChange={(value) => setSortMode(value as SortMode)}
-            includeAllOption={false}
-            options={[
-              { label: "Inventario", value: "inventory" },
-              { label: "Título", value: "title" },
-              { label: "Artista", value: "artist" },
-              { label: "Año", value: "year" },
-            ]}
-          />
-        </div>
+        {isFilterPanelOpen && (
+          <div
+            id="artworks-filter-panel"
+            className="mt-4 border-t border-border/60 pt-4"
+          >
+            <div className="flex min-h-14 items-center gap-3 rounded-[1rem] bg-background/78 px-4">
+              <Search
+                className="size-5 shrink-0 text-primary/64"
+                aria-hidden="true"
+              />
+              <label htmlFor="artworks-search" className="sr-only">
+                Buscar obras
+              </label>
+              <Input
+                id="artworks-search"
+                type="search"
+                value={query}
+                placeholder="Buscar por obra, artista, técnica o inventario"
+                className="h-12 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <FilterSelect
+                label="Artista"
+                value={artistFilter}
+                onChange={setArtistFilter}
+                options={artists.map(([id, name]) => ({
+                  label: name,
+                  value: id,
+                }))}
+              />
+              <FilterSelect
+                label="Museo"
+                value={museumFilter}
+                onChange={setMuseumFilter}
+                options={museums.map(([id, name]) => ({
+                  label: name,
+                  value: id,
+                }))}
+              />
+              <FilterSelect
+                label="Año"
+                value={yearFilter}
+                onChange={setYearFilter}
+                options={[
+                  ...years.map((year) => ({ label: year, value: year })),
+                  { label: "Sin fecha", value: EMPTY_YEAR_VALUE },
+                ]}
+              />
+              <FilterSelect
+                label="Técnica"
+                value={techniqueFilter}
+                onChange={setTechniqueFilter}
+                options={techniques.map((technique) => ({
+                  label: technique,
+                  value: technique,
+                }))}
+              />
+              <FilterSelect
+                label="Exhibición"
+                value={exhibitionFilter}
+                onChange={setExhibitionFilter}
+                options={exhibitionStatuses.map((status) => ({
+                  label: status === "No" ? "No exhibida" : status,
+                  value: status,
+                }))}
+              />
+              <FilterSelect
+                label="Orden"
+                value={sortMode}
+                onChange={(value) => setSortMode(value as SortMode)}
+                includeAllOption={false}
+                options={[
+                  { label: "Inventario", value: "inventory" },
+                  { label: "Título", value: "title" },
+                  { label: "Artista", value: "artist" },
+                  { label: "Año", value: "year" },
+                ]}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {filteredArtworks.length > 0 ? (

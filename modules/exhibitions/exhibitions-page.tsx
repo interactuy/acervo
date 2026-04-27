@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { Container } from "@/components/layout/container";
-import { getExhibitions, getMuseumById } from "@/lib/acervo/data";
+import { getExhibitions, getMuseums } from "@/lib/acervo/data";
 
-export function ExhibitionsPage() {
-  const exhibitions = getExhibitions();
+export async function ExhibitionsPage() {
+  const [exhibitions, museums] = await Promise.all([
+    getExhibitions(),
+    getMuseums(),
+  ]);
+  const museumsById = new Map(museums.map((museum) => [museum.id, museum]));
 
   return (
     <main className="bg-background">
@@ -24,7 +28,7 @@ export function ExhibitionsPage() {
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {exhibitions.map((exhibition) => {
-            const museum = getMuseumById(exhibition.museumId);
+            const museum = museumsById.get(exhibition.museumId);
 
             return (
               <article

@@ -9,10 +9,12 @@ type ArtworkPageProps = {
   }>;
 };
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
-export function generateStaticParams() {
-  return getArtworks().map((artwork) => ({
+export async function generateStaticParams() {
+  const artworks = await getArtworks();
+
+  return artworks.map((artwork) => ({
     slug: artwork.slug,
   }));
 }
@@ -21,7 +23,7 @@ export async function generateMetadata({
   params,
 }: ArtworkPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = getArtworkProfile(slug);
+  const profile = await getArtworkProfile(slug);
 
   if (!profile) {
     return {
@@ -43,7 +45,7 @@ export async function generateMetadata({
 
 export default async function Page({ params }: ArtworkPageProps) {
   const { slug } = await params;
-  const profile = getArtworkProfile(slug);
+  const profile = await getArtworkProfile(slug);
 
   if (!profile) {
     notFound();

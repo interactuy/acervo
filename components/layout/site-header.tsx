@@ -11,10 +11,12 @@ import { cn } from "@/lib/utils";
 export function SiteHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isArtworkProfile = /^\/obras\/[^/]+$/.test(pathname);
+  const isOverlayHeader = isHome || isArtworkProfile;
   const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
-    if (!isHome) {
+    if (!isOverlayHeader) {
       return;
     }
 
@@ -29,17 +31,17 @@ export function SiteHeader() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", updateScrollState);
     };
-  }, [isHome]);
+  }, [isOverlayHeader]);
 
   return (
     <header
       className={cn(
         "top-0 z-40 transition-colors duration-300",
-        isHome
+        isOverlayHeader
           ? cn(
               "fixed inset-x-0 text-white",
               hasScrolled
-                ? "bg-[#0d0d0d]/48 shadow-[0_14px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl"
+                ? "bg-[#0d0d0d]/54 shadow-[0_14px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl"
                 : "bg-transparent",
             )
           : "sticky bg-background/88 text-foreground backdrop-blur-xl",
@@ -50,14 +52,16 @@ export function SiteHeader() {
           href="/"
           className={cn(
             "flex w-fit items-center gap-3 transition-colors",
-            isHome ? "text-white hover:text-white/82" : "hover:text-primary",
+            isOverlayHeader
+              ? "text-white hover:text-white/82"
+              : "hover:text-primary",
           )}
           aria-label="Acervo"
         >
           <span
             className={cn(
               "flex size-9 items-center justify-center rounded-md shadow-sm",
-              isHome
+              isOverlayHeader
                 ? cn(
                     "text-white backdrop-blur-md",
                     hasScrolled ? "bg-white/12" : "bg-white/10",

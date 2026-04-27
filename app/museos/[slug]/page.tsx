@@ -12,10 +12,12 @@ type MuseumPageProps = {
   }>;
 };
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
-export function generateStaticParams() {
-  return getMuseums().map((museum) => ({
+export async function generateStaticParams() {
+  const museums = await getMuseums();
+
+  return museums.map((museum) => ({
     slug: museum.slug,
   }));
 }
@@ -24,7 +26,7 @@ export async function generateMetadata({
   params,
 }: MuseumPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = getMuseumProfile(slug);
+  const profile = await getMuseumProfile(slug);
 
   if (!profile) {
     return {
@@ -40,7 +42,7 @@ export async function generateMetadata({
 
 export default async function Page({ params }: MuseumPageProps) {
   const { slug } = await params;
-  const profile = getMuseumProfile(slug);
+  const profile = await getMuseumProfile(slug);
 
   if (!profile) {
     notFound();

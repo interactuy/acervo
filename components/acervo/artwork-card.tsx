@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ImageIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { ArtworkWithArtist } from "@/types/acervo";
 import { cn } from "@/lib/utils";
 
@@ -27,12 +27,9 @@ export function ArtworkCard({ artwork, className }: ArtworkCardProps) {
           alt={artwork.title}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+          unoptimized={imageSrc.startsWith("http")}
           className="object-contain p-4 transition duration-500 group-hover:scale-[1.03]"
         />
-        <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-background/88 px-3 py-1 text-xs font-medium text-primary shadow-sm backdrop-blur-md">
-          <ImageIcon className="size-3.5" aria-hidden="true" />
-          MNAV
-        </div>
       </div>
 
       <div className="p-5">
@@ -55,9 +52,6 @@ export function ArtworkCard({ artwork, className }: ArtworkCardProps) {
           {[artwork.year, artwork.technique, artwork.dimensions]
             .filter(Boolean)
             .join(" · ")}
-        </p>
-        <p className="mt-5 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground/78">
-          Imagen y datos: MNAV
         </p>
       </div>
     </Link>

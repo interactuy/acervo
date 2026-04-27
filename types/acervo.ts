@@ -23,14 +23,25 @@ export type Museum = {
   city: string;
   country: string;
   coordinates: {
-    lat: number;
-    lng: number;
+    lat: number | null;
+    lng: number | null;
   };
   openingHours?: {
     label: string;
     notes?: string;
   };
+  accessibility?: string | null;
   website?: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  ticketInfo?: string | null;
+  howToGetThere?: string | null;
+  social?: {
+    instagram?: string | null;
+    facebook?: string | null;
+    x?: string | null;
+    youtube?: string | null;
+  } | null;
   sourceUrl: string;
   collectionSourceUrl?: string;
   image: AcervoImage;
@@ -40,6 +51,8 @@ export type Artist = {
   id: string;
   slug: string;
   name: string;
+  biography?: string | null;
+  portrait?: AcervoImage | null;
   birthYear: number | null;
   deathYear: number | null;
   lifeDates: string | null;

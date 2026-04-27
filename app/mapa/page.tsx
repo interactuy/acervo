@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { MapPage } from "@/modules/map/map-page";
+import { MuseumsPage } from "@/modules/museums/museums-page";
 
 export const metadata: Metadata = {
   title: "Mapa",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function Page() {
-  return <MapPage />;
+  return <MuseumsPage />;
 }

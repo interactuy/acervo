@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-04-24T16:39:33.497Z",
+    "generatedAt": "2026-04-27T00:19:16.573Z",
     "sourceUrl": "https://mnav.gub.uy/cms.php?id=coleccion2023",
     "sourceLabel": "Colección MNAV 2023",
     "subsetLimit": 100
@@ -13,7 +13,7 @@
       "acronym": "MNAV",
       "type": "Museo",
       "summary": "Museo nacional dedicado a preservar, investigar y difundir la colección pública de artes visuales del Uruguay.",
-      "description": "El Museo Nacional de Artes Visuales reúne una de las colecciones artísticas públicas más importantes del Uruguay, con especial énfasis en artistas nacionales y obras constitutivas del patrimonio visual del país.",
+      "description": "Fundado en 1911, el MNAV es una de las instituciones centrales del arte en Uruguay. Ubicado en Parque Rodó, reúne un patrimonio de más de 7.000 obras, con especial presencia de artistas nacionales, y combina acervo, exposiciones temporales, actividades y una biblioteca especializada, consolidándose como un punto clave para acercarse a la historia y a la producción artística del país. Abre de martes a domingos, de 13:00 a 20:00, con entrada gratuita.",
       "address": "Av. Tomás Giribaldi 2283 y Av. Julio Herrera y Reissig",
       "neighborhood": "Parque Rodó",
       "city": "Montevideo",
@@ -26,12 +26,337 @@
         "label": "Martes a domingos, 13:00 a 20:00 hs",
         "notes": "Entrada gratuita. Confirmar horarios especiales con la institución."
       },
+      "accessibility": "Consultar condiciones de accesibilidad actualizadas con la institución antes de la visita.",
       "website": "https://mnav.gub.uy/",
+      "contactEmail": null,
+      "contactPhone": null,
       "sourceUrl": "https://mnav.gub.uy/cms.php?id=contacto",
       "collectionSourceUrl": "https://mnav.gub.uy/cms.php?id=coleccion2023",
       "image": {
-        "src": "/hero/home-artwork-01.png",
-        "alt": "Imagen editorial de referencia para MNAV"
+        "src": "",
+        "alt": "Foto del Museo Nacional de Artes Visuales"
+      }
+    },
+    {
+      "id": "museum-museo-de-bellas-artes-juan-manuel-blanes",
+      "slug": "museo-de-bellas-artes-juan-manuel-blanes",
+      "name": "Museo de Bellas Artes Juan Manuel Blanes",
+      "acronym": "Museo Blanes",
+      "type": "Museo de arte",
+      "summary": "Uno de los museos de bellas artes más importantes de Montevideo, ubicado en una histórica quinta del Prado y con una fuerte relación entre colección, edificio y jardín.",
+      "description": "El Museo de Bellas Artes Juan Manuel Blanes es una de las referencias centrales del circuito artístico de Montevideo. Su propuesta combina patrimonio arquitectónico, colección de arte y exposiciones en un entorno especialmente atractivo dentro del Prado, lo que vuelve la visita valiosa tanto por las obras como por la experiencia de recorrer el lugar.",
+      "address": "Av. Millán 4015",
+      "neighborhood": "Prado",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Martes a domingo de 12:00 a 17:45.",
+        "notes": "Horario citado en publicación oficial de Museos del Uruguay; conviene verificar cambios temporales antes de visitar."
+      },
+      "accessibility": null,
+      "website": "http://blanes.montevideo.gub.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": null,
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/164-museo-de-bellas-artes-juan-manuel-blanes",
+      "image": {
+        "src": "/images/placeholders/museums/museo-de-bellas-artes-juan-manuel-blanes.jpg",
+        "alt": "Fachada o vista exterior del Museo de Bellas Artes Juan Manuel Blanes."
+      }
+    },
+    {
+      "id": "museum-museo-de-arte-precolombino-e-indigena",
+      "slug": "museo-de-arte-precolombino-e-indigena",
+      "name": "Museo de Arte Precolombino e Indígena",
+      "acronym": "MAPI",
+      "type": "Museo de arqueología y antropología",
+      "summary": "Museo dedicado a la arqueología y etnografía de los pueblos originarios de América, con una propuesta activa, pedagógica y muy conectada con la Ciudad Vieja.",
+      "description": "El MAPI reúne colección permanente, investigación, educación y muestras temporales en torno al patrimonio precolombino e indígena de América. Su perfil combina divulgación, trabajo pedagógico y una mirada continental, lo que lo convierte en una de las propuestas más activas y versátiles del panorama museístico montevideano.",
+      "address": "25 de Mayo 279",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Lunes a sábados de 10:30 a 18:00.",
+        "notes": "Publicaciones oficiales del sistema de museos informan además que los lunes la entrada es gratuita."
+      },
+      "accessibility": null,
+      "website": "https://mapi.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Lunes con entrada gratuita según publicación oficial; otros valores no verificados en fuente oficial consultada.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/176-museo-arte-precolombino-e-indigena",
+      "image": {
+        "src": "/images/placeholders/museums/museo-de-arte-precolombino-e-indigena.jpg",
+        "alt": "Vista del Museo de Arte Precolombino e Indígena en Ciudad Vieja."
+      }
+    },
+    {
+      "id": "museum-museo-joaquin-torres-garcia",
+      "slug": "museo-joaquin-torres-garcia",
+      "name": "Museo Joaquín Torres García",
+      "acronym": "MTG",
+      "type": "Museo de arte",
+      "summary": "Museo dedicado a la obra, manuscritos y legado de Joaquín Torres García, figura fundamental del arte uruguayo y del constructivismo en la región.",
+      "description": "El Museo Joaquín Torres García exhibe de forma permanente obras y manuscritos del artista, recorriendo distintas etapas de su vida y producción. Es una parada clave para entender el legado de uno de los nombres más influyentes del arte uruguayo y su impacto en la historia visual latinoamericana.",
+      "address": "Peatonal Sarandí 683",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "accessibility": null,
+      "website": "https://torresgarcia.org.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": null,
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/169-museo-joaquin-torres-garcia",
+      "image": {
+        "src": "/images/placeholders/museums/museo-joaquin-torres-garcia.jpg",
+        "alt": "Vista del Museo Joaquín Torres García en la peatonal Sarandí."
+      }
+    },
+    {
+      "id": "museum-museo-gurvich",
+      "slug": "museo-gurvich",
+      "name": "Museo Gurvich",
+      "acronym": "Museo Gurvich",
+      "type": "Museo de arte",
+      "summary": "Espacio dedicado a la obra y al universo de José Gurvich, con colección permanente, exposiciones y una propuesta activa en Ciudad Vieja.",
+      "description": "El Museo Gurvich ofrece un recorrido por la obra y el mundo creativo de José Gurvich, uno de los artistas más singulares vinculados al Taller Torres García. Su colección y su programación permiten acercarse tanto a las piezas como al contexto de producción del artista, en una visita íntima y muy cuidada.",
+      "address": "Sarandí 524",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Lunes a viernes de 10:00 a 18:00; sábados de 11:00 a 15:00.",
+        "notes": "Las fuentes oficiales también informan visitas guiadas en inglés y español y recomiendan consultar recepción para agenda."
+      },
+      "accessibility": null,
+      "website": "https://museogurvich.org",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Residentes: $220; no residentes: $400; jubilados residentes y estudiantes: $110; menores de 12 años gratis; martes gratis para residentes.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/173-museo-gurvich",
+      "image": {
+        "src": "/images/placeholders/museums/museo-gurvich.jpg",
+        "alt": "Vista del acceso al Museo Gurvich en Ciudad Vieja."
+      }
+    },
+    {
+      "id": "museum-museo-historico-cabildo-de-montevideo",
+      "slug": "museo-historico-cabildo-de-montevideo",
+      "name": "Museo Histórico Cabildo de Montevideo",
+      "acronym": "Cabildo",
+      "type": "Museo de historia",
+      "summary": "Museo ubicado en un edificio emblemático de Ciudad Vieja que articula historia, patrimonio urbano y exposiciones con fuerte valor cívico y educativo.",
+      "description": "Dependiente de la Intendencia de Montevideo, el Museo Histórico Cabildo trabaja sobre la historia de la ciudad y del país desde una institución patrimonial situada en pleno casco histórico. Su perfil combina memoria urbana, actividad cultural y propuestas expositivas pensadas para dialogar con públicos diversos.",
+      "address": "Juan Carlos Gómez 1362",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "accessibility": null,
+      "website": "https://museocabildo.montevideo.gub.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": null,
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/137-museo-y-archivo-historico-cabildo-de-montevideo",
+      "image": {
+        "src": "/images/placeholders/museums/museo-historico-cabildo-de-montevideo.jpg",
+        "alt": "Fachada del Museo Histórico Cabildo de Montevideo."
+      }
+    },
+    {
+      "id": "museum-museo-figari",
+      "slug": "museo-figari",
+      "name": "Museo Figari",
+      "acronym": "Museo Figari",
+      "type": "Museo de arte",
+      "summary": "Institución dedicada a la conservación, investigación y difusión de la obra y el legado intelectual de Pedro Figari.",
+      "description": "El Museo Figari trabaja sobre el patrimonio constituido por la obra de Pedro Figari con fines de estudio, educación y recreación. Su propuesta permite acercarse no solo al artista plástico, sino también a sus múltiples facetas como abogado, periodista, político, pedagogo, filósofo y escritor.",
+      "address": "Juan Carlos Gómez 1427",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Martes a viernes de 13:00 a 18:00; sábados de 10:00 a 14:00.",
+        "notes": "Horario citado en comunicaciones oficiales de Museos del Uruguay."
+      },
+      "accessibility": null,
+      "website": "https://museofigari.gub.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Entrada gratuita.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/175-museo-figari",
+      "image": {
+        "src": "/images/placeholders/museums/museo-figari.jpg",
+        "alt": "Vista exterior del Museo Figari en Ciudad Vieja."
+      }
+    },
+    {
+      "id": "museum-museo-juan-zorrilla-de-san-martin",
+      "slug": "museo-juan-zorrilla-de-san-martin",
+      "name": "Museo Juan Zorrilla de San Martín",
+      "acronym": "Museo Zorrilla",
+      "type": "Casa museo",
+      "summary": "Casa museo dedicada a Juan Zorrilla de San Martín, con valor literario, patrimonial y paisajístico frente al Río de la Plata.",
+      "description": "Instalado en la casa de Juan Zorrilla de San Martín, este museo combina memoria literaria, patrimonio doméstico y exposiciones temporales. Su singularidad está tanto en la figura que evoca como en la experiencia de recorrer una residencia histórica emplazada en un punto privilegiado de la ciudad.",
+      "address": "José Luis Zorrilla de San Martín 96",
+      "neighborhood": "Punta Carretas",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Lunes a viernes de 14:00 a 19:00; sábados de 11:00 a 16:00.",
+        "notes": "Publicaciones oficiales anteriores también mencionan apertura de lunes a sábado; conviene verificar horario vigente antes de visitar."
+      },
+      "accessibility": null,
+      "website": "https://museozorrilla.gub.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Entrada gratuita.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/163-museo-casa-de-juan-zorrilla-de-san-martin",
+      "image": {
+        "src": "/images/placeholders/museums/museo-juan-zorrilla-de-san-martin.jpg",
+        "alt": "Casa museo Juan Zorrilla de San Martín."
+      }
+    },
+    {
+      "id": "museum-museo-nacional-de-historia-natural",
+      "slug": "museo-nacional-de-historia-natural",
+      "name": "Museo Nacional de Historia Natural",
+      "acronym": "MNHN",
+      "type": "Museo de ciencias naturales",
+      "summary": "Institución central para explorar biodiversidad, patrimonio científico y divulgación de las ciencias naturales en Uruguay.",
+      "description": "El Museo Nacional de Historia Natural es una referencia clave para acercarse al patrimonio natural y científico del país. Su propuesta expositiva en Montevideo ofrece una entrada distinta al panorama museístico de la ciudad, más orientada a la biodiversidad, la investigación y la divulgación.",
+      "address": "Miguelete 1825",
+      "neighborhood": "Aguada",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Miércoles a sábados de 13:00 a 19:00.",
+        "notes": "La fuente oficial distingue entre sede expositiva en Miguelete 1825 y colecciones científicas, biblioteca y administración en 25 de Mayo 582."
+      },
+      "accessibility": null,
+      "website": "https://www.mnhn.gub.uy",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Entrada gratuita.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/166-museo-nacional-de-historia-natural",
+      "image": {
+        "src": "/images/placeholders/museums/museo-nacional-de-historia-natural.jpg",
+        "alt": "Sede expositiva del Museo Nacional de Historia Natural."
+      }
+    },
+    {
+      "id": "museum-museo-nacional-de-antropologia",
+      "slug": "museo-nacional-de-antropologia",
+      "name": "Museo Nacional de Antropología",
+      "acronym": "MNA",
+      "type": "Museo de antropología",
+      "summary": "Museo dedicado a la antropología y la arqueología, con una colección que articula patrimonio material, investigación y divulgación.",
+      "description": "El Museo Nacional de Antropología ofrece una aproximación al patrimonio antropológico y arqueológico del país desde una perspectiva de investigación, conservación y difusión pública. Es una pieza importante para ampliar el recorrido cultural de Montevideo más allá de las artes visuales.",
+      "address": "Av. de las Instrucciones 948",
+      "neighborhood": "Prado",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Lunes a viernes de 10:00 a 17:00; sábados de 11:00 a 17:00.",
+        "notes": "Horario informado en comunicaciones oficiales recientes de Museos del Uruguay."
+      },
+      "accessibility": null,
+      "website": "https://www.gub.uy/ministerio-educacion-cultura/mna",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Entrada gratuita.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php/museos/museos-por-localidad/montevideo/item/165-museo-nacional-de-antropologia",
+      "image": {
+        "src": "/images/placeholders/museums/museo-nacional-de-antropologia.jpg",
+        "alt": "Acceso al Museo Nacional de Antropología."
+      }
+    },
+    {
+      "id": "museum-museo-de-artes-decorativas-palacio-taranco",
+      "slug": "museo-de-artes-decorativas-palacio-taranco",
+      "name": "Museo de Artes Decorativas – Palacio Taranco",
+      "acronym": "Palacio Taranco",
+      "type": "Museo de artes decorativas",
+      "summary": "Museo instalado en el Palacio Taranco, con una valiosa colección de mobiliario, esculturas, pinturas y objetos decorativos en un edificio patrimonial de alto valor.",
+      "description": "El Museo de Artes Decorativas está emplazado en la antigua residencia de la familia Ortiz de Taranco, un edificio emblemático de Montevideo. Su acervo reúne mobiliario, esculturas, pinturas, relojes, tapices, cerámicas y objetos decorativos europeos, en un recorrido donde la arquitectura del palacio es parte central de la experiencia.",
+      "address": "Circunvalación Durango y Solís",
+      "neighborhood": "Ciudad Vieja",
+      "city": "Montevideo",
+      "country": "Uruguay",
+      "coordinates": {
+        "lat": null,
+        "lng": null
+      },
+      "openingHours": {
+        "label": "Martes a sábados de 11:00 a 18:00.",
+        "notes": "Las fuentes oficiales consultadas indican además que el museo forma parte del circuito del MEC y recomiendan verificar horarios especiales antes de visitar."
+      },
+      "accessibility": null,
+      "website": "https://www.gub.uy/ministerio-educacion-cultura/politicas-y-gestion/museo-artes-decorativas-palacio-taranco",
+      "contactEmail": null,
+      "contactPhone": null,
+      "ticketInfo": "Entrada gratuita.",
+      "howToGetThere": null,
+      "social": null,
+      "sourceUrl": "https://www.museos.gub.uy/index.php?id=142%3Amuseo-de-artes-decorativas-palacio-taranco&option=com_k2&view=item",
+      "image": {
+        "src": "/images/placeholders/museums/museo-de-artes-decorativas-palacio-taranco.jpg",
+        "alt": "Fachada del Palacio Taranco, sede del Museo de Artes Decorativas."
       }
     }
   ],

@@ -2,8 +2,8 @@ import { Container } from "@/components/layout/container";
 import { getArtworksWithArtists } from "@/lib/acervo/data";
 import { ArtworksBrowser } from "@/modules/artworks/artworks-browser";
 
-export function ArtworksPage() {
-  const artworks = getArtworksWithArtists();
+export async function ArtworksPage() {
+  const artworks = await getArtworksWithArtists();
 
   return (
     <main className="bg-background">

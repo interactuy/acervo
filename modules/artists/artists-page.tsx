@@ -1,10 +1,9 @@
-import Link from "next/link";
-import { ArrowRight, Users } from "lucide-react";
 import { Container } from "@/components/layout/container";
 import { getArtistsWithArtworkCounts } from "@/lib/acervo/data";
+import { ArtistsBrowser } from "@/modules/artists/artists-browser";
 
-export function ArtistsPage() {
-  const artists = getArtistsWithArtworkCounts();
+export async function ArtistsPage() {
+  const artists = await getArtistsWithArtworkCounts();
 
   return (
     <main className="bg-background">
@@ -22,33 +21,7 @@ export function ArtistsPage() {
           </p>
         </section>
 
-        <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {artists.map((artist) => (
-            <Link
-              key={artist.id}
-              id={artist.slug}
-              href={`/buscar?q=${encodeURIComponent(artist.name)}`}
-              className="group rounded-[1.1rem] bg-card/78 p-5 shadow-[0_18px_60px_rgba(23,25,22,0.05)] transition hover:-translate-y-0.5 hover:bg-card"
-            >
-              <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Users className="size-4" aria-hidden="true" />
-              </span>
-              <h2 className="mt-5 font-serif text-2xl font-medium leading-tight text-foreground">
-                {artist.name}
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {artist.lifeDates ?? "Fechas no disponibles"}
-              </p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-primary">
-                {artist.artworkCount} obras vinculadas
-                <ArrowRight
-                  className="size-4 transition group-hover:translate-x-1"
-                  aria-hidden="true"
-                />
-              </span>
-            </Link>
-          ))}
-        </div>
+        <ArtistsBrowser artists={artists} />
       </Container>
     </main>
   );

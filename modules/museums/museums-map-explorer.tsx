@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import type { Map as MapboxMap, Marker as MapboxMarker } from "mapbox-gl";
-import { ArrowRight, Landmark, List, MapPin, Search } from "lucide-react";
+import { ArrowRight, List, MapPin, Search } from "lucide-react";
+import { MuseumPhoto } from "@/components/acervo/museum-photo";
 import { Input } from "@/components/ui/input";
 import { mapboxConfig } from "@/lib/mapbox/config";
 import { cn } from "@/lib/utils";
@@ -18,12 +19,29 @@ const fallbackPositions = [
   "left-[25%] top-[61%]",
 ];
 
+const ALL_MUSEUMS_HREF = "/museos/lista";
+
 function getMuseumHref(museum: Museum) {
   return `/museos/${museum.slug}`;
 }
 
 function getMuseumCoordinates(museum: Museum): [number, number] {
-  return [museum.coordinates.lng, museum.coordinates.lat];
+  return [museum.coordinates.lng ?? 0, museum.coordinates.lat ?? 0];
+}
+
+export function hasValidMuseumCoordinates(museum: Museum) {
+  const { lat, lng } = museum.coordinates;
+
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
 }
 
 function normalizeMapSearch(value: string) {
@@ -106,20 +124,28 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
   const [selectedMuseumId, setSelectedMuseumId] = useState(
     museums[0]?.id ?? "",
   );
+  const [visibleMapMuseumIds, setVisibleMapMuseumIds] = useState<string[]>(() =>
+    museums.filter(hasValidMuseumCoordinates).map((museum) => museum.id),
+  );
   const [sheetState, setSheetState] = useState<SheetState>("collapsed");
   const [searchQuery, setSearchQuery] = useState("");
 
   const selectedMuseum =
-    museums.find((museum) => museum.id === selectedMuseumId) ?? museums[0];
+    museums.find((museum) => museum.id === selectedMuseumId) ?? null;
 
   const filteredMuseums = useMemo(() => {
     const normalizedQuery = normalizeMapSearch(searchQuery);
+    const visibleMapMuseumIdSet =
+      mapState === "ready" ? new Set(visibleMapMuseumIds) : null;
+    const visibleMuseums = visibleMapMuseumIdSet
+      ? museums.filter((museum) => visibleMapMuseumIdSet.has(museum.id))
+      : museums;
 
     if (!normalizedQuery) {
-      return museums;
+      return visibleMuseums;
     }
 
-    return museums.filter((museum) =>
+    return visibleMuseums.filter((museum) =>
       [
         museum.name,
         museum.acronym,
@@ -129,6 +155,9 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
         museum.address,
         museum.summary,
         museum.description,
+        museum.accessibility,
+        museum.contactEmail,
+        museum.contactPhone,
       ]
         .join(" ")
         .normalize("NFD")
@@ -136,12 +165,17 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [museums, searchQuery]);
+  }, [mapState, museums, searchQuery, visibleMapMuseumIds]);
+
+  const previewMuseum =
+    filteredMuseums.find((museum) => museum.id === selectedMuseumId) ??
+    filteredMuseums[0] ??
+    selectedMuseum;
 
   const filteredMuseumsLabel =
     filteredMuseums.length === 1
-      ? "1 espacio para explorar"
-      : `${filteredMuseums.length} espacios para explorar`;
+      ? "1 museo visible"
+      : `${filteredMuseums.length} museos visibles`;
 
   useEffect(() => {
     if (!hasMapboxToken || !mapContainerRef.current) {
@@ -150,6 +184,21 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
 
     let mounted = true;
     let map: MapboxMap | undefined;
+    const museumsWithCoordinates = museums.filter(hasValidMuseumCoordinates);
+
+    function updateVisibleMuseums(mapInstance: MapboxMap) {
+      const bounds = mapInstance.getBounds();
+
+      if (!bounds) {
+        return;
+      }
+
+      setVisibleMapMuseumIds(
+        museumsWithCoordinates
+          .filter((museum) => bounds.contains(getMuseumCoordinates(museum)))
+          .map((museum) => museum.id),
+      );
+    }
 
     async function initializeMap() {
       try {
@@ -164,10 +213,10 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
         const mapInstance = new mapboxgl.default.Map({
           container: mapContainerRef.current,
           style: mapboxConfig.defaultStyle,
-          center: museums[0]
-            ? getMuseumCoordinates(museums[0])
+          center: museumsWithCoordinates[0]
+            ? getMuseumCoordinates(museumsWithCoordinates[0])
             : [...mapboxConfig.defaultCenter],
-          zoom: museums.length === 1 ? 13.45 : 12.15,
+          zoom: museumsWithCoordinates.length === 1 ? 13.45 : 12.15,
           attributionControl: false,
           cooperativeGestures: false,
           doubleClickZoom: true,
@@ -181,6 +230,8 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
 
         mapInstance.once("load", () => {
           applyMinimalMapStyle(mapInstance);
+          updateVisibleMuseums(mapInstance);
+          mapInstance.on("moveend", () => updateVisibleMuseums(mapInstance));
           setMapState("ready");
           requestAnimationFrame(() => mapInstance.resize());
         });
@@ -194,7 +245,7 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
           "bottom-right",
         );
 
-        museums.forEach((museum) => {
+        museumsWithCoordinates.forEach((museum) => {
           const marker = new mapboxgl.default.Marker({
             color: "#3E679F",
             scale: 0.82,
@@ -314,7 +365,7 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
           className={cn(
             "mx-auto max-w-6xl overflow-hidden rounded-t-[1.75rem] bg-[#fbf8ef]/93 shadow-[0_-22px_90px_rgba(23,25,22,0.18)] backdrop-blur-2xl transition-[height] duration-300 ease-out sm:rounded-[1.75rem]",
             sheetState === "collapsed" && "h-[8.5rem] sm:h-[9rem]",
-            sheetState === "preview" && "h-[25rem] sm:h-[24rem]",
+            sheetState === "preview" && "h-[min(82svh,36rem)]",
             sheetState === "expanded" &&
               "h-[calc(100svh-6.5rem)] sm:h-[min(78svh,42rem)]",
           )}
@@ -373,6 +424,23 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
 
             <div
               className={cn(
+                "mt-4 flex justify-end transition-opacity duration-200",
+                sheetState === "collapsed"
+                  ? "pointer-events-none opacity-0"
+                  : "opacity-100",
+              )}
+            >
+              <Link
+                href={ALL_MUSEUMS_HREF}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+              >
+                Ver todos los museos
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+
+            <div
+              className={cn(
                 "transition-opacity duration-200",
                 sheetState === "collapsed"
                   ? "pointer-events-none opacity-0"
@@ -388,31 +456,34 @@ export function MuseumsMapExplorer({ museums }: MuseumsMapExplorerProps) {
                   />
                 ) : (
                   <MuseumPreview
-                    museum={selectedMuseum}
+                    museum={previewMuseum}
                     onOpenList={() => setSheetState("expanded")}
                   />
                 ))}
 
               {sheetState === "expanded" && (
-                <div className="mt-4 grid max-h-[calc(100svh-19rem)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 sm:max-h-[calc(78svh-15rem)] lg:max-h-[25rem]">
-                  {filteredMuseums.map((museum) => (
-                    <MuseumListCard
-                      key={museum.id}
-                      museum={museum}
-                      isSelected={museum.id === selectedMuseumId}
-                      onSelect={() => setSelectedMuseumId(museum.id)}
-                    />
-                  ))}
-                  {filteredMuseums.length === 0 && (
-                    <div className="rounded-2xl bg-white/50 p-5">
-                      <p className="font-serif text-2xl font-medium text-foreground">
-                        Sin resultados
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Proba buscar por museo, barrio o tipo de espacio.
-                      </p>
-                    </div>
-                  )}
+                <div className="mt-4">
+                  <div className="grid max-h-[calc(100svh-26rem)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 sm:max-h-[calc(78svh-22rem)] lg:max-h-[18rem] lg:grid-cols-3">
+                    {filteredMuseums.map((museum) => (
+                      <MuseumListCard
+                        key={museum.id}
+                        museum={museum}
+                        isSelected={museum.id === selectedMuseumId}
+                        onSelect={() => setSelectedMuseumId(museum.id)}
+                      />
+                    ))}
+                    {filteredMuseums.length === 0 && (
+                      <div className="rounded-2xl bg-white/50 p-5">
+                        <p className="font-serif text-2xl font-medium text-foreground">
+                          Sin resultados
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          Proba mover el mapa o buscar por museo, barrio o tipo
+                          de espacio.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -427,26 +498,46 @@ function MuseumPreview({
   museum,
   onOpenList,
 }: {
-  museum: Museum;
+  museum: Museum | null;
   onOpenList: () => void;
 }) {
-  return (
-    <div className="mt-4 rounded-2xl bg-white/56 p-4 shadow-[0_18px_45px_rgba(62,103,159,0.13)]">
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Landmark className="size-4" aria-hidden="true" />
-        </span>
-        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary/80">
-          {museum.neighborhood}
-        </span>
+  if (!museum) {
+    return (
+      <div className="mt-4 rounded-2xl bg-white/56 p-4 shadow-[0_18px_45px_rgba(62,103,159,0.13)]">
+        <h2 className="font-serif text-3xl font-medium leading-none text-foreground">
+          Sin museos visibles
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Mové el mapa o abrí la lista completa para ver todos los museos
+          cargados.
+        </p>
       </div>
-      <h2 className="mt-4 font-serif text-3xl font-medium leading-none text-foreground">
-        {museum.name}
-      </h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {museum.summary}
-      </p>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[1.45rem] bg-[#fbf8ef] shadow-[0_18px_45px_rgba(62,103,159,0.13)]">
+      <Link href={getMuseumHref(museum)} className="group block">
+        <div className="relative h-32 overflow-hidden bg-muted sm:h-36">
+          <MuseumPhoto
+            museum={museum}
+            sizes="(min-width: 1024px) 44rem, 100vw"
+            className="transition duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
+        <div className="p-4 sm:p-5">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/74">
+            {museum.type} · {museum.neighborhood}
+          </p>
+          <h2 className="mt-2 font-serif text-3xl font-medium leading-[1.02] text-foreground sm:text-4xl">
+            {museum.name}
+          </h2>
+          <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+            {museum.summary}
+          </p>
+        </div>
+      </Link>
+      <div className="flex flex-wrap items-center gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
         <Link
           href={getMuseumHref(museum)}
           className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
@@ -459,7 +550,7 @@ function MuseumPreview({
           className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/15"
           onClick={onOpenList}
         >
-          Ver lista completa
+          Ver museos visibles
         </button>
       </div>
     </div>
@@ -479,7 +570,7 @@ function MuseumResultsPreview({
 
   return (
     <div className="mt-4 rounded-2xl bg-white/50 p-4 shadow-[0_18px_45px_rgba(62,103,159,0.11)]">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-primary">
             Resultados cercanos
@@ -493,7 +584,7 @@ function MuseumResultsPreview({
           className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/15"
           onClick={onOpenList}
         >
-          Ver todos
+          Ver visibles
         </button>
       </div>
 
@@ -508,7 +599,7 @@ function MuseumResultsPreview({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-              <h2 className="font-serif text-xl font-medium leading-tight text-foreground">
+                <h2 className="font-serif text-xl font-medium leading-tight text-foreground">
                   {museum.name}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -551,33 +642,37 @@ function MuseumListCard({
       id={museum.id}
       href={getMuseumHref(museum)}
       className={cn(
-        "group rounded-2xl bg-white/50 p-4 transition hover:-translate-y-0.5 hover:bg-white/75 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35",
+        "group overflow-hidden rounded-2xl bg-white/50 transition hover:-translate-y-0.5 hover:bg-white/75 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35",
         isSelected && "shadow-[0_18px_45px_rgba(62,103,159,0.15)]",
       )}
       onMouseEnter={onSelect}
       onFocus={onSelect}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Landmark className="size-4" aria-hidden="true" />
-        </span>
-        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary/80">
-          {museum.neighborhood}
+      <div className="relative h-28 bg-muted">
+        <MuseumPhoto
+          museum={museum}
+          sizes="(min-width: 1024px) 18rem, 50vw"
+          className="transition duration-500 group-hover:scale-[1.03]"
+        />
+      </div>
+      <div className="p-4">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary/74">
+          {museum.type} · {museum.neighborhood}
+        </p>
+        <h2 className="mt-2 font-serif text-2xl font-medium leading-none text-foreground">
+          {museum.name}
+        </h2>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+          {museum.summary}
+        </p>
+        <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
+          Ver perfil
+          <ArrowRight
+            className="size-4 transition group-hover:translate-x-1"
+            aria-hidden="true"
+          />
         </span>
       </div>
-      <h2 className="mt-4 font-serif text-2xl font-medium leading-none text-foreground">
-        {museum.name}
-      </h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {museum.summary}
-      </p>
-      <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
-        Ver perfil
-        <ArrowRight
-          className="size-4 transition group-hover:translate-x-1"
-          aria-hidden="true"
-        />
-      </span>
     </Link>
   );
 }

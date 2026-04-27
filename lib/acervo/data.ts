@@ -1,4 +1,13 @@
-import seedData from "@/data/seed/mnav-v1.json";
+import { readFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import { cache } from "react";
+import {
+  ACERVO_CONTENT_ID,
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
+import type { Json } from "@/types/database";
 import type {
   AcervoSeed,
   Artist,
@@ -10,106 +19,151 @@ import type {
   SearchResult,
 } from "@/types/acervo";
 
-const seed = seedData as AcervoSeed;
+export const ACERVO_SEED_PATH = path.join(
+  process.cwd(),
+  "data/seed/mnav-v1.json",
+);
 
-const museumsById = new Map(seed.museums.map((museum) => [museum.id, museum]));
-const artistsById = new Map(seed.artists.map((artist) => [artist.id, artist]));
-const artworksById = new Map(seed.artworks.map((artwork) => [artwork.id, artwork]));
-
-export function getAcervoMeta() {
-  return seed.meta;
+export function readAcervoSeed(): AcervoSeed {
+  return JSON.parse(readFileSync(ACERVO_SEED_PATH, "utf8")) as AcervoSeed;
 }
 
-export function getMuseums(): Museum[] {
-  return seed.museums;
+export const getAcervoSeed = cache(async (): Promise<AcervoSeed> => {
+  const supabaseSeed = await readSupabaseAcervoSeed();
+
+  return supabaseSeed ?? readAcervoSeed();
+});
+
+export async function saveAcervoSeed(seed: AcervoSeed): Promise<AcervoSeed> {
+  const nextSeed: AcervoSeed = {
+    ...seed,
+    meta: {
+      ...seed.meta,
+      generatedAt: new Date().toISOString(),
+    },
+  };
+  const supabase = createSupabaseAdminClient();
+
+  if (supabase) {
+    const { error } = await supabase.from("acervo_content").upsert(
+      {
+        id: ACERVO_CONTENT_ID,
+        data: nextSeed as unknown as Json,
+        updated_at: nextSeed.meta.generatedAt,
+      },
+      { onConflict: "id" },
+    );
+
+    if (!error) {
+      return nextSeed;
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`No se pudo guardar en Supabase: ${error.message}`);
+    }
+
+    console.warn(
+      `[acervo] Supabase save failed, using local seed: ${error.message}`,
+    );
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Falta SUPABASE_SERVICE_ROLE_KEY para guardar contenido en produccion.",
+    );
+  }
+
+  await writeFile(ACERVO_SEED_PATH, `${JSON.stringify(nextSeed, null, 2)}\n`);
+
+  return nextSeed;
 }
 
-export function getMuseumBySlug(slug: string): Museum | null {
+export async function getAcervoMeta() {
+  return (await getAcervoSeed()).meta;
+}
+
+export async function getMuseums(): Promise<Museum[]> {
+  return (await getAcervoSeed()).museums;
+}
+
+export async function getMuseumBySlug(slug: string): Promise<Museum | null> {
+  const seed = await getAcervoSeed();
+
   return seed.museums.find((museum) => museum.slug === slug) ?? null;
 }
 
-export function getMuseumById(id: string): Museum | null {
-  return museumsById.get(id) ?? null;
+export async function getMuseumById(id: string): Promise<Museum | null> {
+  const seed = await getAcervoSeed();
+
+  return getMuseumByIdFromSeed(seed, id);
 }
 
-export function getArtists(): Artist[] {
-  return seed.artists;
+export async function getArtists(): Promise<Artist[]> {
+  return (await getAcervoSeed()).artists;
 }
 
-export function getArtistById(id: string): Artist | null {
-  return artistsById.get(id) ?? null;
+export async function getArtistById(id: string): Promise<Artist | null> {
+  const seed = await getAcervoSeed();
+
+  return getArtistByIdFromSeed(seed, id);
 }
 
-export function getArtworks(): Artwork[] {
-  return seed.artworks;
+export async function getArtistBySlug(slug: string): Promise<Artist | null> {
+  const seed = await getAcervoSeed();
+
+  return seed.artists.find((artist) => artist.slug === slug) ?? null;
 }
 
-export function getArtworkById(id: string): Artwork | null {
-  return artworksById.get(id) ?? null;
+export async function getArtworks(): Promise<Artwork[]> {
+  return (await getAcervoSeed()).artworks;
 }
 
-export function getArtworkBySlug(slug: string): ArtworkWithArtist | null {
+export async function getArtworkById(id: string): Promise<Artwork | null> {
+  const seed = await getAcervoSeed();
+
+  return seed.artworks.find((artwork) => artwork.id === id) ?? null;
+}
+
+export async function getArtworkBySlug(
+  slug: string,
+): Promise<ArtworkWithArtist | null> {
+  const seed = await getAcervoSeed();
+
   return (
-    getArtworksWithArtists().find((artwork) => artwork.slug === slug) ?? null
+    getArtworksWithArtistsFromSeed(seed).find((artwork) => artwork.slug === slug) ??
+    null
   );
 }
 
-export function getExhibitions(): Exhibition[] {
-  return seed.exhibitions;
+export async function getExhibitions(): Promise<Exhibition[]> {
+  return (await getAcervoSeed()).exhibitions;
 }
 
-export function getArtworksWithArtists(): ArtworkWithArtist[] {
-  return seed.artworks.map((artwork) => ({
-    ...artwork,
-    artist: getArtistById(artwork.artistId),
-    museum: getMuseumById(artwork.museumId),
-  }));
+export async function getArtworksWithArtists(): Promise<ArtworkWithArtist[]> {
+  return getArtworksWithArtistsFromSeed(await getAcervoSeed());
 }
 
-export function getArtworksByMuseumId(museumId: string): ArtworkWithArtist[] {
-  return getArtworksWithArtists().filter(
-    (artwork) => artwork.museumId === museumId,
-  );
+export async function getArtworksByMuseumId(
+  museumId: string,
+): Promise<ArtworkWithArtist[]> {
+  return getArtworksByMuseumIdFromSeed(await getAcervoSeed(), museumId);
 }
 
-export function getArtistsByMuseumId(museumId: string): ArtistWithArtworkCount[] {
-  const museumArtworks = seed.artworks.filter(
-    (artwork) => artwork.museumId === museumId,
-  );
-  const countsByArtistId = new Map<string, number>();
-
-  museumArtworks.forEach((artwork) => {
-    countsByArtistId.set(
-      artwork.artistId,
-      (countsByArtistId.get(artwork.artistId) ?? 0) + 1,
-    );
-  });
-
-  return Array.from(countsByArtistId.entries())
-    .map(([artistId, artworkCount]) => {
-      const artist = getArtistById(artistId);
-
-      if (!artist) {
-        return null;
-      }
-
-      return {
-        ...artist,
-        artworkCount,
-      };
-    })
-    .filter((artist): artist is ArtistWithArtworkCount => Boolean(artist))
-    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+export async function getArtistsByMuseumId(
+  museumId: string,
+): Promise<ArtistWithArtworkCount[]> {
+  return getArtistsByMuseumIdFromSeed(await getAcervoSeed(), museumId);
 }
 
-export function getExhibitionsByMuseumId(museumId: string): Exhibition[] {
-  return seed.exhibitions.filter(
-    (exhibition) => exhibition.museumId === museumId,
-  );
+export async function getExhibitionsByMuseumId(
+  museumId: string,
+): Promise<Exhibition[]> {
+  return getExhibitionsByMuseumIdFromSeed(await getAcervoSeed(), museumId);
 }
 
-export function getMuseumProfile(slug: string) {
-  const museum = getMuseumBySlug(slug);
+export async function getMuseumProfile(slug: string) {
+  const seed = await getAcervoSeed();
+  const museum = seed.museums.find((item) => item.slug === slug) ?? null;
 
   if (!museum) {
     return null;
@@ -117,20 +171,23 @@ export function getMuseumProfile(slug: string) {
 
   return {
     museum,
-    artworks: getArtworksByMuseumId(museum.id),
-    artists: getArtistsByMuseumId(museum.id),
-    exhibitions: getExhibitionsByMuseumId(museum.id),
+    artworks: getArtworksByMuseumIdFromSeed(seed, museum.id),
+    artists: getArtistsByMuseumIdFromSeed(seed, museum.id),
+    exhibitions: getExhibitionsByMuseumIdFromSeed(seed, museum.id),
   };
 }
 
-export function getArtworkProfile(slug: string) {
-  const artwork = getArtworkBySlug(slug);
+export async function getArtworkProfile(slug: string) {
+  const seed = await getAcervoSeed();
+  const artwork =
+    getArtworksWithArtistsFromSeed(seed).find((item) => item.slug === slug) ??
+    null;
 
   if (!artwork) {
     return null;
   }
 
-  const relatedArtworks = getArtworksWithArtists()
+  const relatedArtworks = getArtworksWithArtistsFromSeed(seed)
     .filter(
       (relatedArtwork) =>
         relatedArtwork.artistId === artwork.artistId &&
@@ -144,7 +201,36 @@ export function getArtworkProfile(slug: string) {
   };
 }
 
-export function getArtistsWithArtworkCounts(): ArtistWithArtworkCount[] {
+export async function getArtistProfile(slug: string) {
+  const seed = await getAcervoSeed();
+  const artist = seed.artists.find((item) => item.slug === slug) ?? null;
+
+  if (!artist) {
+    return null;
+  }
+
+  const artworks = getArtworksByArtistIdFromSeed(seed, artist.id);
+  const museums = Array.from(
+    new Map(
+      artworks
+        .map((artwork) => artwork.museum)
+        .filter((museum): museum is Museum => Boolean(museum))
+        .map((museum) => [museum.id, museum]),
+    ).values(),
+  );
+
+  return {
+    artist,
+    artworks,
+    museums,
+  };
+}
+
+export async function getArtistsWithArtworkCounts(): Promise<
+  ArtistWithArtworkCount[]
+> {
+  const seed = await getAcervoSeed();
+
   return seed.artists
     .map((artist) => ({
       ...artist,
@@ -163,11 +249,8 @@ export function normalizeSearchText(value: string): string {
     .trim();
 }
 
-function includesQuery(values: Array<string | null | undefined>, query: string) {
-  return values.some((value) => normalizeSearchText(value ?? "").includes(query));
-}
-
-export function searchAcervo(query: string): SearchResult[] {
+export async function searchAcervo(query: string): Promise<SearchResult[]> {
+  const seed = await getAcervoSeed();
   const normalizedQuery = normalizeSearchText(query);
 
   if (!normalizedQuery) {
@@ -211,11 +294,11 @@ export function searchAcervo(query: string): SearchResult[] {
       label: "Artista",
       title: artist.name,
       subtitle: artist.lifeDates ? artist.lifeDates : "Artista del acervo",
-      description: `${getArtworksByArtistId(artist.id).length} obras vinculadas al MNAV`,
-      href: `/artistas#${artist.slug}`,
+      description: `${getArtworksByArtistIdFromSeed(seed, artist.id).length} obras vinculadas al MNAV`,
+      href: `/artistas/${artist.slug}`,
     }));
 
-  const artworkResults = getArtworksWithArtists()
+  const artworkResults = getArtworksWithArtistsFromSeed(seed)
     .filter((artwork) =>
       includesQuery(
         [
@@ -243,8 +326,137 @@ export function searchAcervo(query: string): SearchResult[] {
   return [...museumResults, ...artistResults, ...artworkResults].slice(0, 36);
 }
 
-export function getArtworksByArtistId(artistId: string): ArtworkWithArtist[] {
-  return getArtworksWithArtists().filter(
+export async function getArtworksByArtistId(
+  artistId: string,
+): Promise<ArtworkWithArtist[]> {
+  return getArtworksByArtistIdFromSeed(await getAcervoSeed(), artistId);
+}
+
+async function readSupabaseAcervoSeed(): Promise<AcervoSeed | null> {
+  const supabase = createSupabaseAdminClient() ?? createSupabaseServerClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("acervo_content")
+    .select("data")
+    .eq("id", ACERVO_CONTENT_ID)
+    .maybeSingle();
+
+  if (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[acervo] Supabase read failed, using local seed: ${error.message}`,
+      );
+    }
+
+    return null;
+  }
+
+  if (!isAcervoSeed(data?.data)) {
+    return null;
+  }
+
+  return data.data;
+}
+
+function getMuseumByIdFromSeed(seed: AcervoSeed, id: string): Museum | null {
+  return seed.museums.find((museum) => museum.id === id) ?? null;
+}
+
+function getArtistByIdFromSeed(seed: AcervoSeed, id: string): Artist | null {
+  return seed.artists.find((artist) => artist.id === id) ?? null;
+}
+
+function getArtworksWithArtistsFromSeed(seed: AcervoSeed): ArtworkWithArtist[] {
+  const museumsById = new Map(seed.museums.map((museum) => [museum.id, museum]));
+  const artistsById = new Map(seed.artists.map((artist) => [artist.id, artist]));
+
+  return seed.artworks.map((artwork) => ({
+    ...artwork,
+    artist: artistsById.get(artwork.artistId) ?? null,
+    museum: museumsById.get(artwork.museumId) ?? null,
+  }));
+}
+
+function getArtworksByMuseumIdFromSeed(
+  seed: AcervoSeed,
+  museumId: string,
+): ArtworkWithArtist[] {
+  return getArtworksWithArtistsFromSeed(seed).filter(
+    (artwork) => artwork.museumId === museumId,
+  );
+}
+
+function getArtistsByMuseumIdFromSeed(
+  seed: AcervoSeed,
+  museumId: string,
+): ArtistWithArtworkCount[] {
+  const museumArtworks = seed.artworks.filter(
+    (artwork) => artwork.museumId === museumId,
+  );
+  const countsByArtistId = new Map<string, number>();
+
+  museumArtworks.forEach((artwork) => {
+    countsByArtistId.set(
+      artwork.artistId,
+      (countsByArtistId.get(artwork.artistId) ?? 0) + 1,
+    );
+  });
+
+  return Array.from(countsByArtistId.entries())
+    .map(([artistId, artworkCount]) => {
+      const artist = getArtistByIdFromSeed(seed, artistId);
+
+      if (!artist) {
+        return null;
+      }
+
+      return {
+        ...artist,
+        artworkCount,
+      };
+    })
+    .filter((artist): artist is ArtistWithArtworkCount => Boolean(artist))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+function getExhibitionsByMuseumIdFromSeed(
+  seed: AcervoSeed,
+  museumId: string,
+): Exhibition[] {
+  return seed.exhibitions.filter(
+    (exhibition) => exhibition.museumId === museumId,
+  );
+}
+
+function getArtworksByArtistIdFromSeed(
+  seed: AcervoSeed,
+  artistId: string,
+): ArtworkWithArtist[] {
+  return getArtworksWithArtistsFromSeed(seed).filter(
     (artwork) => artwork.artistId === artistId,
+  );
+}
+
+function includesQuery(values: Array<string | null | undefined>, query: string) {
+  return values.some((value) => normalizeSearchText(value ?? "").includes(query));
+}
+
+function isAcervoSeed(value: unknown): value is AcervoSeed {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const seed = value as Partial<AcervoSeed>;
+
+  return (
+    Boolean(seed.meta) &&
+    Array.isArray(seed.museums) &&
+    Array.isArray(seed.artists) &&
+    Array.isArray(seed.artworks) &&
+    Array.isArray(seed.exhibitions)
   );
 }

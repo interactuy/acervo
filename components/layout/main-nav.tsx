@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export function MainNav() {
   const pathname = usePathname();
-  const isOverlay = pathname === "/";
+  const isOverlay = pathname === "/" || /^\/obras\/[^/]+$/.test(pathname);
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -47,14 +47,14 @@ export function MainNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "relative px-2.5 py-2 text-sm font-medium transition-colors after:absolute after:inset-x-2.5 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:transition-transform hover:after:scale-x-100",
                 isOverlay
-                  ? "text-white/78 hover:bg-white/12 hover:text-white"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "text-white after:bg-white/80 hover:text-white"
+                  : "text-muted-foreground after:bg-foreground/62 hover:text-foreground",
                 isActive &&
                   (isOverlay
-                    ? "bg-white/15 text-white shadow-sm hover:bg-white/20"
-                    : "bg-primary text-primary-foreground shadow-sm hover:bg-primary"),
+                    ? "text-white after:scale-x-100"
+                    : "text-foreground after:scale-x-100"),
               )}
             >
               {item.title}
@@ -82,14 +82,14 @@ export function MainNav() {
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  "rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                  "relative rounded-xl px-4 py-3 text-sm font-medium transition-colors after:absolute after:bottom-2 after:left-4 after:h-px after:w-8 after:origin-left after:scale-x-0 after:transition-transform hover:after:scale-x-100",
                   isOverlay
-                    ? "text-white/78 hover:bg-white/12 hover:text-white"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "text-white after:bg-white/80 hover:text-white"
+                    : "text-muted-foreground after:bg-foreground/62 hover:bg-muted/55 hover:text-foreground",
                   isActive &&
                     (isOverlay
-                      ? "bg-white/14 text-white"
-                      : "bg-primary text-primary-foreground"),
+                      ? "text-white after:scale-x-100"
+                      : "text-foreground after:scale-x-100"),
                 )}
               >
                 {item.title}

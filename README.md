@@ -32,3 +32,17 @@ La estructura vive en raiz, sin carpeta `src`.
 ## Variables
 
 Copiar `.env.example` a `.env.local` cuando se definan las credenciales de Supabase y Mapbox.
+
+Para persistencia real del admin:
+
+1. Ejecutar `supabase/acervo-schema.sql` en el SQL editor del proyecto Supabase.
+2. Definir `SUPABASE_SERVICE_ROLE_KEY` solo en el entorno server/deploy.
+3. Cargar el seed inicial con:
+
+```bash
+npm run seed:supabase
+```
+
+El admin guarda en `public.acervo_content` y sube imagenes al bucket
+`acervo-media`. En desarrollo, si falta la service role key, el proyecto sigue
+usando `data/seed/mnav-v1.json` como respaldo local.
