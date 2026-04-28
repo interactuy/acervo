@@ -37,6 +37,7 @@ export function MuseumProfilePage({
 }: MuseumProfilePageProps) {
   const featuredArtists = artists.slice(0, 12);
   const directionsHref = getDirectionsHref(museum);
+  const initialArtworkCount = Math.min(12, artworks.length);
 
   return (
     <main className="bg-background">
@@ -130,7 +131,7 @@ export function MuseumProfilePage({
                 />
               )}
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/54">
-                Datos institucionales: MNAV
+                Fuente de obras: MNAV
               </p>
             </div>
           </aside>
@@ -171,7 +172,10 @@ export function MuseumProfilePage({
               </h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              12 visibles de entrada · {artworks.length} obras registradas
+              {initialArtworkCount}{" "}
+              {initialArtworkCount === 1 ? "visible" : "visibles"} de entrada ·{" "}
+              {artworks.length}{" "}
+              {artworks.length === 1 ? "obra registrada" : "obras registradas"}
             </p>
           </div>
 

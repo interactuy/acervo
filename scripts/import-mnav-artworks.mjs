@@ -18,6 +18,69 @@ const REQUIRED_COLUMNS = [
   "MODIFICADO",
 ];
 
+const MUSEUM_ID_BY_LOCATION_NOTE = new Map([
+  [
+    "Prestado: Museo Dep. de San José",
+    "museum-museo-de-bellas-artes-de-san-jose",
+  ],
+  [
+    "Prestado: Salto (Pcio. Gallino/Mus.B.Artes)",
+    "museum-museo-gallino",
+  ],
+  [
+    "Prestado: Museo de Artes Decorativas - Palacio Taranco",
+    "museum-museo-de-artes-decorativas-palacio-taranco",
+  ],
+  [
+    "Prestado: Museo Histórico Nacional",
+    "museum-museo-historico-nacional",
+  ],
+  ["Prestado: Casa Montero", "museum-museo-romantico-casa-montero"],
+  ["Prestado: Museo de Durazno", "museum-museo-de-arte-gonzalez-posse"],
+  [
+    "Prestado: Mercedes, Mus. Bibl. Eusebio Giménez",
+    "museum-pinacoteca-museo-eusebio-gimenez",
+  ],
+  [
+    "Prestado: Museo de Flores",
+    "museum-museo-historico-departamental-fernando-gutierrez",
+  ],
+  ["Prestado: Museo Figari", "museum-museo-figari"],
+  [
+    "Prestado: Río Negro (Mus. Bibl. Mun. F. Bentos)",
+    "museum-museo-luis-alberto-solari",
+  ],
+  [
+    "Prestado: Palacio Estévez",
+    "museum-museo-de-la-casa-de-gobierno-palacio-estevez",
+  ],
+  ["Prestado: Museo Treinta y Tres", "museum-museo-agustin-araujo"],
+  [
+    "Prestado: Museo Municipal J. M. Blanes",
+    "museum-museo-de-bellas-artes-juan-manuel-blanes",
+  ],
+  [
+    "Prestado: Museo Regional. de Maldonado",
+    "museum-museo-regional-francisco-mazzoni",
+  ],
+  [
+    "Prestado: Mercedes(Mus. Paleont. y C. Naturales)",
+    "museum-museo-paleontologico-alejandro-berro",
+  ],
+  [
+    "Prestado: Museo Agustín Araujo - Treinta y Tres",
+    "museum-museo-agustin-araujo",
+  ],
+  [
+    "Prestado: Espacio de Arte Contemporáneo",
+    "museum-espacio-de-arte-contemporaneo",
+  ],
+  [
+    "Prestado: Museo Blandengues de Artigas",
+    "museum-museo-blandengues-de-artigas",
+  ],
+]);
+
 const args = parseArgs(process.argv.slice(2));
 
 if (args.help) {
@@ -363,7 +426,7 @@ function mapCsvRowToArtwork(row, lineNumber, context) {
     title: title ?? "",
     inventoryNumber: externalId ?? "",
     artistId: artist?.id ?? "",
-    museumId: context.museumId,
+    museumId: resolveMuseumIdForLocation(locationNote, context.museumId),
     year: yearLabel,
     yearLabel,
     yearStart: yearRange.yearStart,
@@ -394,6 +457,12 @@ function mapCsvRowToArtwork(row, lineNumber, context) {
     artistExternalId,
     lineNumber,
   };
+}
+
+function resolveMuseumIdForLocation(locationNote, fallbackMuseumId) {
+  const normalizedLocation = normalizeText(locationNote);
+
+  return MUSEUM_ID_BY_LOCATION_NOTE.get(normalizedLocation) ?? fallbackMuseumId;
 }
 
 function addDimensionWarning(warnings, column, rawValue, parsedValue) {
