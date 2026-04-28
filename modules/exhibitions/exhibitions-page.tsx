@@ -18,11 +18,11 @@ export async function ExhibitionsPage() {
             Exposiciones
           </p>
           <h1 className="mt-4 font-serif text-5xl font-medium leading-[1.02] text-foreground sm:text-6xl">
-            Exposiciones y recortes curatoriales
+            Exposiciones y recorridos curatoriales
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            Estructura inicial para conectar exposiciones, museos y obras. En
-            esta etapa queda cargado el recorte de coleccion MNAV.
+            Un espacio para reunir muestras, obras e instituciones y seguir sus
+            vínculos dentro del acervo.
           </p>
         </section>
 
@@ -40,7 +40,7 @@ export async function ExhibitionsPage() {
                   <CalendarDays className="size-4" aria-hidden="true" />
                 </span>
                 <p className="mt-5 text-xs font-medium uppercase tracking-[0.14em] text-primary/74">
-                  {museum?.name ?? "Museo no disponible"}
+                  {museum?.name ?? "Institución sin registrar"}
                 </p>
                 <h2 className="mt-2 font-serif text-3xl font-medium leading-tight text-foreground">
                   {exhibition.title}

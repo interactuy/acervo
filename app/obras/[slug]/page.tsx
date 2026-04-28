@@ -35,7 +35,7 @@ export async function generateMetadata({
     title: profile.artwork.title,
     description: [
       profile.artwork.artist?.name,
-      profile.artwork.year,
+      profile.artwork.yearLabel ?? profile.artwork.year,
       profile.artwork.technique,
     ]
       .filter(Boolean)

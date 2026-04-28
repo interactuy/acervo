@@ -10,7 +10,8 @@ type ArtworkCardProps = {
 };
 
 export function ArtworkCard({ artwork, className }: ArtworkCardProps) {
-  const imageSrc = artwork.imageUrl ?? "/hero/home-artwork-01.png";
+  const imageSrc = artwork.imageSrc ?? artwork.imageUrl ?? "/hero/home-artwork-01.png";
+  const year = artwork.yearLabel ?? artwork.year;
 
   return (
     <Link
@@ -46,10 +47,10 @@ export function ArtworkCard({ artwork, className }: ArtworkCardProps) {
           {artwork.title}
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          {artwork.artist?.name ?? "Autor no disponible"}
+          {artwork.artist?.name ?? "Autor sin registrar"}
         </p>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          {[artwork.year, artwork.technique, artwork.dimensions]
+          {[year, artwork.technique, artwork.dimensions]
             .filter(Boolean)
             .join(" · ")}
         </p>

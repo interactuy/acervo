@@ -4,6 +4,11 @@ import { useMemo, useState } from "react";
 import { ChevronDown, SlidersHorizontal, Search, X } from "lucide-react";
 import { ArtworkCard } from "@/components/acervo/artwork-card";
 import { Input } from "@/components/ui/input";
+import {
+  getSearchScore,
+  hasSearchQuery,
+  type SearchField,
+} from "@/lib/acervo/search";
 import type { ArtworkWithArtist } from "@/types/acervo";
 
 type ArtworksBrowserProps = {
@@ -14,18 +19,22 @@ type SortMode = "inventory" | "title" | "artist" | "year";
 
 const ALL_VALUE = "__all";
 const EMPTY_YEAR_VALUE = "__empty_year";
+const WITH_IMAGE_VALUE = "__with_image";
+const WITHOUT_IMAGE_VALUE = "__without_image";
+const INITIAL_VISIBLE_COUNT = 60;
+const VISIBLE_INCREMENT = 60;
 const collator = new Intl.Collator("es", {
   numeric: true,
   sensitivity: "base",
 });
 
-function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
+const periodOptions = [
+  { label: "Hasta 1899", value: "pre-1900" },
+  { label: "1900-1949", value: "1900-1949" },
+  { label: "1950-1999", value: "1950-1999" },
+  { label: "2000 en adelante", value: "2000-plus" },
+  { label: "Sin fecha", value: EMPTY_YEAR_VALUE },
+];
 
 function uniqueSorted(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter(Boolean) as string[])).sort((a, b) =>
@@ -33,7 +42,7 @@ function uniqueSorted(values: Array<string | null | undefined>) {
   );
 }
 
-function getYearSortValue(year: string | null) {
+function getYearSortValue(year: string | null | undefined) {
   if (!year) {
     return Number.POSITIVE_INFINITY;
   }
@@ -43,15 +52,50 @@ function getYearSortValue(year: string | null) {
   return match ? Number.parseInt(match[0], 10) : Number.POSITIVE_INFINITY;
 }
 
+function getArtworkYear(artwork: ArtworkWithArtist) {
+  return artwork.yearLabel ?? artwork.year;
+}
+
+function getArtworkYearStart(artwork: ArtworkWithArtist) {
+  return artwork.yearStart ?? getYearSortValue(getArtworkYear(artwork));
+}
+
+function getPeriodValue(artwork: ArtworkWithArtist) {
+  const year = getArtworkYearStart(artwork);
+
+  if (!Number.isFinite(year)) {
+    return EMPTY_YEAR_VALUE;
+  }
+
+  if (year < 1900) {
+    return "pre-1900";
+  }
+
+  if (year < 1950) {
+    return "1900-1949";
+  }
+
+  if (year < 2000) {
+    return "1950-1999";
+  }
+
+  return "2000-plus";
+}
+
 export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
   const [query, setQuery] = useState("");
   const [artistFilter, setArtistFilter] = useState(ALL_VALUE);
   const [museumFilter, setMuseumFilter] = useState(ALL_VALUE);
-  const [yearFilter, setYearFilter] = useState(ALL_VALUE);
+  const [periodFilter, setPeriodFilter] = useState(ALL_VALUE);
   const [techniqueFilter, setTechniqueFilter] = useState(ALL_VALUE);
   const [exhibitionFilter, setExhibitionFilter] = useState(ALL_VALUE);
+  const [imageFilter, setImageFilter] = useState(ALL_VALUE);
   const [sortMode, setSortMode] = useState<SortMode>("inventory");
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [visibleState, setVisibleState] = useState({
+    key: "",
+    count: INITIAL_VISIBLE_COUNT,
+  });
 
   const artists = useMemo(() => {
     const artistMap = new Map<string, string>();
@@ -81,13 +125,13 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
     );
   }, [artworks]);
 
-  const years = useMemo(
-    () =>
-      uniqueSorted(artworks.map((artwork) => artwork.year)).sort(
-        (a, b) => getYearSortValue(a) - getYearSortValue(b),
-      ),
-    [artworks],
-  );
+  const availablePeriods = useMemo(() => {
+    const usedPeriodValues = new Set<string>(
+      artworks.map((artwork) => getPeriodValue(artwork)),
+    );
+
+    return periodOptions.filter((option) => usedPeriodValues.has(option.value));
+  }, [artworks]);
 
   const techniques = useMemo(
     () => uniqueSorted(artworks.map((artwork) => artwork.technique)),
@@ -100,98 +144,119 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
   );
 
   const filteredArtworks = useMemo(() => {
-    const normalizedQuery = normalizeSearchText(query);
+    const hasQuery = hasSearchQuery(query);
 
     return artworks
-      .filter((artwork) => {
-        const matchesQuery =
-          !normalizedQuery ||
-          normalizeSearchText(
-            [
-              artwork.title,
-              artwork.inventoryNumber,
-              artwork.artist?.name,
-              artwork.museum?.name,
-              artwork.technique,
-              artwork.dimensions,
-              artwork.year,
-              artwork.exhibitionStatus,
-            ]
-              .filter(Boolean)
-              .join(" "),
-          ).includes(normalizedQuery);
+      .map((artwork) => ({
+        artwork,
+        searchScore: hasQuery
+          ? getSearchScore(query, getArtworkSearchFields(artwork))
+          : 0,
+      }))
+      .filter(({ artwork, searchScore }) => {
+        const imageSrc = artwork.imageSrc ?? artwork.imageUrl;
+        const matchesQuery = !hasQuery || searchScore > 0;
 
         const matchesArtist =
           artistFilter === ALL_VALUE || artwork.artistId === artistFilter;
         const matchesMuseum =
           museumFilter === ALL_VALUE || artwork.museumId === museumFilter;
-        const matchesYear =
-          yearFilter === ALL_VALUE ||
-          (yearFilter === EMPTY_YEAR_VALUE && !artwork.year) ||
-          artwork.year === yearFilter;
+        const matchesPeriod =
+          periodFilter === ALL_VALUE || getPeriodValue(artwork) === periodFilter;
         const matchesTechnique =
           techniqueFilter === ALL_VALUE ||
           artwork.technique === techniqueFilter;
         const matchesExhibition =
           exhibitionFilter === ALL_VALUE ||
           artwork.exhibitionStatus === exhibitionFilter;
+        const matchesImage =
+          imageFilter === ALL_VALUE ||
+          (imageFilter === WITH_IMAGE_VALUE && Boolean(imageSrc)) ||
+          (imageFilter === WITHOUT_IMAGE_VALUE && !imageSrc);
 
         return (
           matchesQuery &&
           matchesArtist &&
           matchesMuseum &&
-          matchesYear &&
+          matchesPeriod &&
           matchesTechnique &&
-          matchesExhibition
+          matchesExhibition &&
+          matchesImage
         );
       })
       .sort((a, b) => {
+        if (hasQuery && a.searchScore !== b.searchScore) {
+          return b.searchScore - a.searchScore;
+        }
+
         if (sortMode === "title") {
-          return collator.compare(a.title, b.title);
+          return collator.compare(a.artwork.title, b.artwork.title);
         }
 
         if (sortMode === "artist") {
-          return collator.compare(a.artist?.name ?? "", b.artist?.name ?? "");
+          return collator.compare(
+            a.artwork.artist?.name ?? "",
+            b.artwork.artist?.name ?? "",
+          );
         }
 
         if (sortMode === "year") {
           return (
-            getYearSortValue(a.year) - getYearSortValue(b.year) ||
-            collator.compare(a.title, b.title)
+            getYearSortValue(getArtworkYear(a.artwork)) -
+              getYearSortValue(getArtworkYear(b.artwork)) ||
+            collator.compare(a.artwork.title, b.artwork.title)
           );
         }
 
-        return collator.compare(a.inventoryNumber, b.inventoryNumber);
-      });
+        return collator.compare(a.artwork.inventoryNumber, b.artwork.inventoryNumber);
+      })
+      .map((item) => item.artwork);
   }, [
     artistFilter,
     artworks,
     exhibitionFilter,
+    imageFilter,
     museumFilter,
+    periodFilter,
     query,
     sortMode,
     techniqueFilter,
-    yearFilter,
   ]);
 
   const activeFilterCount = [
     query.trim(),
     artistFilter !== ALL_VALUE,
     museumFilter !== ALL_VALUE,
-    yearFilter !== ALL_VALUE,
+    periodFilter !== ALL_VALUE,
     techniqueFilter !== ALL_VALUE,
     exhibitionFilter !== ALL_VALUE,
+    imageFilter !== ALL_VALUE,
     sortMode !== "inventory",
   ].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
+  const resultKey = [
+    query,
+    artistFilter,
+    museumFilter,
+    periodFilter,
+    techniqueFilter,
+    exhibitionFilter,
+    imageFilter,
+    sortMode,
+  ].join("\u001f");
+  const currentVisibleCount =
+    visibleState.key === resultKey ? visibleState.count : INITIAL_VISIBLE_COUNT;
+  const visibleArtworks = filteredArtworks.slice(0, currentVisibleCount);
+  const hasMoreArtworks = visibleArtworks.length < filteredArtworks.length;
 
   function clearFilters() {
     setQuery("");
     setArtistFilter(ALL_VALUE);
     setMuseumFilter(ALL_VALUE);
-    setYearFilter(ALL_VALUE);
+    setPeriodFilter(ALL_VALUE);
     setTechniqueFilter(ALL_VALUE);
     setExhibitionFilter(ALL_VALUE);
+    setImageFilter(ALL_VALUE);
     setSortMode("inventory");
   }
 
@@ -269,7 +334,7 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
               />
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
               <FilterSelect
                 label="Artista"
                 value={artistFilter}
@@ -289,13 +354,10 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
                 }))}
               />
               <FilterSelect
-                label="Año"
-                value={yearFilter}
-                onChange={setYearFilter}
-                options={[
-                  ...years.map((year) => ({ label: year, value: year })),
-                  { label: "Sin fecha", value: EMPTY_YEAR_VALUE },
-                ]}
+                label="Periodo"
+                value={periodFilter}
+                onChange={setPeriodFilter}
+                options={availablePeriods}
               />
               <FilterSelect
                 label="Técnica"
@@ -316,6 +378,15 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
                 }))}
               />
               <FilterSelect
+                label="Imagen"
+                value={imageFilter}
+                onChange={setImageFilter}
+                options={[
+                  { label: "Con imagen", value: WITH_IMAGE_VALUE },
+                  { label: "Sin imagen", value: WITHOUT_IMAGE_VALUE },
+                ]}
+              />
+              <FilterSelect
                 label="Orden"
                 value={sortMode}
                 onChange={(value) => setSortMode(value as SortMode)}
@@ -333,11 +404,37 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
       </div>
 
       {filteredArtworks.length > 0 ? (
-        <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArtworks.map((artwork) => (
-            <ArtworkCard key={artwork.id} artwork={artwork} />
-          ))}
-        </div>
+        <>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <p>
+              Mostrando {visibleArtworks.length} de {filteredArtworks.length}
+            </p>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {visibleArtworks.map((artwork) => (
+              <ArtworkCard key={artwork.id} artwork={artwork} />
+            ))}
+          </div>
+          {hasMoreArtworks && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                onClick={() => {
+                  setVisibleState((state) => ({
+                    key: resultKey,
+                    count:
+                      (state.key === resultKey
+                        ? state.count
+                        : INITIAL_VISIBLE_COUNT) + VISIBLE_INCREMENT,
+                  }));
+                }}
+              >
+                Mostrar más
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="mt-8 rounded-[1.2rem] bg-card/78 p-8 shadow-[0_18px_60px_rgba(23,25,22,0.05)]">
           <h2 className="font-serif text-3xl font-medium text-foreground">
@@ -351,6 +448,31 @@ export function ArtworksBrowser({ artworks }: ArtworksBrowserProps) {
       )}
     </section>
   );
+}
+
+function getArtworkSearchFields(artwork: ArtworkWithArtist): SearchField[] {
+  return [
+    { value: artwork.title, weight: 12 },
+    { value: artwork.externalId, weight: 12 },
+    { value: artwork.inventoryNumber, weight: 12 },
+    { value: artwork.slug, weight: 5 },
+    { value: artwork.artist?.name, weight: 9 },
+    { value: artwork.artist?.slug, weight: 5 },
+    { value: artwork.museum?.name, weight: 5 },
+    { value: artwork.technique, weight: 7 },
+    { value: artwork.dimensions, weight: 5 },
+    { value: artwork.heightCm, weight: 3 },
+    { value: artwork.widthCm, weight: 3 },
+    { value: artwork.depthCm, weight: 3 },
+    { value: getArtworkYear(artwork), weight: 6 },
+    { value: artwork.yearStart, weight: 6 },
+    { value: artwork.yearEnd, weight: 5 },
+    { value: artwork.locationNote ?? artwork.location, weight: 5 },
+    { value: artwork.exhibitionStatus, weight: 4 },
+    { value: artwork.summary, weight: 3 },
+    { value: artwork.description, weight: 2 },
+    { value: artwork.sourceUrl, weight: 1 },
+  ];
 }
 
 type FilterOption = {

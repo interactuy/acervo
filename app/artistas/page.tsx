@@ -5,6 +5,8 @@ export const metadata: Metadata = {
   title: "Artistas",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function Page() {
   return <ArtistsPage />;
 }

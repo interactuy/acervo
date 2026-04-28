@@ -509,7 +509,7 @@ function MuseumPreview({
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Mové el mapa o abrí la lista completa para ver todos los museos
-          cargados.
+          del acervo.
         </p>
       </div>
     );

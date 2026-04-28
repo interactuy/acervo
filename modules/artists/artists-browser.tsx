@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { ArtistAvatar } from "@/components/acervo/artist-avatar";
 import { Input } from "@/components/ui/input";
+import {
+  getSearchScore,
+  hasSearchQuery,
+  type SearchField,
+} from "@/lib/acervo/search";
 import type { ArtistWithArtworkCount } from "@/types/acervo";
 
 type ArtistsBrowserProps = {
@@ -23,9 +28,13 @@ const ALL_VALUE = "__all";
 const EMPTY_VALUE = "__empty";
 const WITH_PORTRAIT_VALUE = "__with_portrait";
 const WITHOUT_PORTRAIT_VALUE = "__without_portrait";
+const WITH_BIO_VALUE = "__with_bio";
+const WITHOUT_BIO_VALUE = "__without_bio";
 const ONE_ARTWORK_VALUE = "1";
 const TWO_TO_FOUR_ARTWORKS_VALUE = "2-4";
 const FIVE_PLUS_ARTWORKS_VALUE = "5-plus";
+const INITIAL_VISIBLE_COUNT = 60;
+const VISIBLE_INCREMENT = 60;
 const collator = new Intl.Collator("es", {
   numeric: true,
   sensitivity: "base",
@@ -38,14 +47,6 @@ const periodOptions = [
   { label: "2000 en adelante", value: "2000-plus" },
   { label: "Sin fecha", value: EMPTY_VALUE },
 ];
-
-function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
 
 function uniqueSorted(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter(Boolean) as string[])).sort((a, b) =>
@@ -82,9 +83,14 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
   const [nationalityFilter, setNationalityFilter] = useState(ALL_VALUE);
   const [periodFilter, setPeriodFilter] = useState(ALL_VALUE);
   const [portraitFilter, setPortraitFilter] = useState(ALL_VALUE);
+  const [bioFilter, setBioFilter] = useState(ALL_VALUE);
   const [artworkCountFilter, setArtworkCountFilter] = useState(ALL_VALUE);
   const [sortMode, setSortMode] = useState<SortMode>("name");
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [visibleState, setVisibleState] = useState({
+    key: "",
+    count: INITIAL_VISIBLE_COUNT,
+  });
 
   const nationalities = useMemo(
     () => uniqueSorted(artists.map((artist) => artist.nationality)),
@@ -100,24 +106,18 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
   }, [artists]);
 
   const filteredArtists = useMemo(() => {
-    const normalizedQuery = normalizeSearchText(query);
+    const hasQuery = hasSearchQuery(query);
 
     return artists
-      .filter((artist) => {
-        const matchesQuery =
-          !normalizedQuery ||
-          normalizeSearchText(
-            [
-              artist.name,
-              artist.lifeDates,
-              artist.nationality,
-              artist.biography,
-              artist.birthYear ? String(artist.birthYear) : null,
-              artist.deathYear ? String(artist.deathYear) : null,
-            ]
-              .filter(Boolean)
-              .join(" "),
-          ).includes(normalizedQuery);
+      .map((artist) => ({
+        artist,
+        searchScore: hasQuery ? getSearchScore(query, getArtistSearchFields(artist)) : 0,
+      }))
+      .filter(({ artist, searchScore }) => {
+        const hasBiography = Boolean(
+          artist.description ?? artist.biography ?? artist.summary,
+        );
+        const matchesQuery = !hasQuery || searchScore > 0;
 
         const matchesNationality =
           nationalityFilter === ALL_VALUE ||
@@ -129,6 +129,10 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
           portraitFilter === ALL_VALUE ||
           (portraitFilter === WITH_PORTRAIT_VALUE && Boolean(artist.portrait)) ||
           (portraitFilter === WITHOUT_PORTRAIT_VALUE && !artist.portrait);
+        const matchesBio =
+          bioFilter === ALL_VALUE ||
+          (bioFilter === WITH_BIO_VALUE && hasBiography) ||
+          (bioFilter === WITHOUT_BIO_VALUE && !hasBiography);
         const matchesArtworkCount =
           artworkCountFilter === ALL_VALUE ||
           (artworkCountFilter === ONE_ARTWORK_VALUE &&
@@ -144,29 +148,37 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
           matchesNationality &&
           matchesPeriod &&
           matchesPortrait &&
+          matchesBio &&
           matchesArtworkCount
         );
       })
       .sort((a, b) => {
+        if (hasQuery && a.searchScore !== b.searchScore) {
+          return b.searchScore - a.searchScore;
+        }
+
         if (sortMode === "artworks") {
           return (
-            b.artworkCount - a.artworkCount || collator.compare(a.name, b.name)
+            b.artist.artworkCount - a.artist.artworkCount ||
+            collator.compare(a.artist.name, b.artist.name)
           );
         }
 
         if (sortMode === "birthYear") {
           return (
-            getBirthYearSortValue(a.birthYear) -
-              getBirthYearSortValue(b.birthYear) ||
-            collator.compare(a.name, b.name)
+            getBirthYearSortValue(a.artist.birthYear) -
+              getBirthYearSortValue(b.artist.birthYear) ||
+            collator.compare(a.artist.name, b.artist.name)
           );
         }
 
-        return collator.compare(a.name, b.name);
-      });
+        return collator.compare(a.artist.name, b.artist.name);
+      })
+      .map((item) => item.artist);
   }, [
     artists,
     artworkCountFilter,
+    bioFilter,
     nationalityFilter,
     periodFilter,
     portraitFilter,
@@ -179,16 +191,31 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
     nationalityFilter !== ALL_VALUE,
     periodFilter !== ALL_VALUE,
     portraitFilter !== ALL_VALUE,
+    bioFilter !== ALL_VALUE,
     artworkCountFilter !== ALL_VALUE,
     sortMode !== "name",
   ].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
+  const resultKey = [
+    query,
+    nationalityFilter,
+    periodFilter,
+    portraitFilter,
+    bioFilter,
+    artworkCountFilter,
+    sortMode,
+  ].join("\u001f");
+  const currentVisibleCount =
+    visibleState.key === resultKey ? visibleState.count : INITIAL_VISIBLE_COUNT;
+  const visibleArtists = filteredArtists.slice(0, currentVisibleCount);
+  const hasMoreArtists = visibleArtists.length < filteredArtists.length;
 
   function clearFilters() {
     setQuery("");
     setNationalityFilter(ALL_VALUE);
     setPeriodFilter(ALL_VALUE);
     setPortraitFilter(ALL_VALUE);
+    setBioFilter(ALL_VALUE);
     setArtworkCountFilter(ALL_VALUE);
     setSortMode("name");
   }
@@ -267,7 +294,7 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
               />
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <FilterSelect
                 label="Nacionalidad"
                 value={nationalityFilter}
@@ -290,6 +317,15 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
                 options={[
                   { label: "Con retrato", value: WITH_PORTRAIT_VALUE },
                   { label: "Sin retrato", value: WITHOUT_PORTRAIT_VALUE },
+                ]}
+              />
+              <FilterSelect
+                label="Biografía"
+                value={bioFilter}
+                onChange={setBioFilter}
+                options={[
+                  { label: "Con bio", value: WITH_BIO_VALUE },
+                  { label: "Sin bio", value: WITHOUT_BIO_VALUE },
                 ]}
               />
               <FilterSelect
@@ -319,11 +355,37 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
       </div>
 
       {filteredArtists.length > 0 ? (
-        <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArtists.map((artist) => (
-            <ArtistCard key={artist.id} artist={artist} />
-          ))}
-        </div>
+        <>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <p>
+              Mostrando {visibleArtists.length} de {filteredArtists.length}
+            </p>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {visibleArtists.map((artist) => (
+              <ArtistCard key={artist.id} artist={artist} />
+            ))}
+          </div>
+          {hasMoreArtists && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                onClick={() => {
+                  setVisibleState((state) => ({
+                    key: resultKey,
+                    count:
+                      (state.key === resultKey
+                        ? state.count
+                        : INITIAL_VISIBLE_COUNT) + VISIBLE_INCREMENT,
+                  }));
+                }}
+              >
+                Mostrar más
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="mt-8 rounded-[1.2rem] bg-card/78 p-8 shadow-[0_18px_60px_rgba(23,25,22,0.05)]">
           <h2 className="font-serif text-3xl font-medium text-foreground">
@@ -337,6 +399,29 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
       )}
     </section>
   );
+}
+
+function getArtistSearchFields(artist: ArtistWithArtworkCount): SearchField[] {
+  return [
+    { value: artist.name, weight: 12 },
+    { value: artist.slug, weight: 6 },
+    { value: artist.externalId, weight: 8 },
+    { value: artist.lifeDates, weight: 6 },
+    { value: artist.birthYear, weight: 6 },
+    { value: artist.deathYear, weight: 5 },
+    { value: artist.nationality, weight: 5 },
+    { value: artist.birthPlace, weight: 5 },
+    { value: artist.deathPlace, weight: 4 },
+    { value: artist.movement, weight: 5 },
+    { value: artist.techniques?.join(" "), weight: 4 },
+    { value: artist.themes?.join(" "), weight: 4 },
+    { value: artist.influences?.join(" "), weight: 3 },
+    { value: artist.keyPeriods?.join(" "), weight: 3 },
+    { value: artist.summary, weight: 3 },
+    { value: artist.description, weight: 2 },
+    { value: artist.biography, weight: 2 },
+    { value: artist.sourceUrl, weight: 1 },
+  ];
 }
 
 function ArtistCard({ artist }: { artist: ArtistWithArtworkCount }) {
@@ -359,8 +444,13 @@ function ArtistCard({ artist }: { artist: ArtistWithArtworkCount }) {
             />
           </span>
           <span className="mt-2 block text-sm text-muted-foreground">
-            {artist.lifeDates ?? "Fechas no disponibles"}
+            {artist.lifeDates ?? "Fechas no registradas"}
           </span>
+          {artist.summary && (
+            <span className="mt-3 line-clamp-2 block text-sm leading-6 text-muted-foreground">
+              {artist.summary}
+            </span>
+          )}
           <span className="mt-4 block text-sm font-medium text-primary">
             {artist.artworkCount} obras vinculadas
           </span>

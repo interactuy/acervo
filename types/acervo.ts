@@ -49,19 +49,44 @@ export type Museum = {
 
 export type Artist = {
   id: string;
+  externalId?: string | null;
   slug: string;
   name: string;
+  summary?: string | null;
+  description?: string | null;
   biography?: string | null;
   portrait?: AcervoImage | null;
   birthYear: number | null;
   deathYear: number | null;
+  birthPlace?: string | null;
+  deathPlace?: string | null;
   lifeDates: string | null;
   nationality?: string | null;
+  movement?: string | null;
+  techniques?: string[];
+  themes?: string[];
+  influences?: string[];
+  keyPeriods?: string[];
+  timeline?: ArtistTimelineItem[];
+  heroArtworkId?: string | null;
+  featuredArtworkId?: string | null;
+  featuredArtworkIds?: string[];
+  relatedArtistIds?: string[];
+  collectionSourceUrl?: string | null;
   sourceUrl: string;
+  isPublished?: boolean;
+};
+
+export type ArtistTimelineItem = {
+  id: string;
+  year?: string | null;
+  title: string;
+  description?: string | null;
 };
 
 export type Artwork = {
   id: string;
+  externalId?: string | null;
   slug: string;
   title: string;
   inventoryNumber: string;
@@ -70,10 +95,22 @@ export type Artwork = {
   technique: string | null;
   dimensions: string | null;
   year: string | null;
+  yearLabel?: string | null;
+  yearStart?: number | null;
+  yearEnd?: number | null;
+  heightCm?: number | null;
+  widthCm?: number | null;
+  depthCm?: number | null;
   location: string | null;
+  locationNote?: string | null;
   exhibitionStatus: string | null;
   sourceUrl: string;
   imageUrl?: string | null;
+  imageSrc?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  modifiedAt?: string | null;
+  isPublished?: boolean;
 };
 
 export type Exhibition = {

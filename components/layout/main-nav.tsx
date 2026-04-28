@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export function MainNav() {
   const pathname = usePathname();
-  const isOverlay = pathname === "/" || /^\/obras\/[^/]+$/.test(pathname);
+  const isOverlay = isHeroOverlayPath(pathname);
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -99,5 +99,14 @@ export function MainNav() {
         </nav>
       )}
     </div>
+  );
+}
+
+function isHeroOverlayPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    /^\/obras\/[^/]+$/.test(pathname) ||
+    /^\/artistas\/[^/]+$/.test(pathname) ||
+    /^\/museos\/[^/]+$/.test(pathname)
   );
 }

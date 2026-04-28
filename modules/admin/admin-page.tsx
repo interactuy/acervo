@@ -12,7 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAcervoSeed } from "@/lib/acervo/data";
-import type { Artist, Artwork, Exhibition, Museum } from "@/types/acervo";
+import type {
+  Artist,
+  ArtistTimelineItem,
+  Artwork,
+  Exhibition,
+  Museum,
+} from "@/types/acervo";
 import {
   deleteArtistAction,
   deleteArtworkAction,
@@ -137,7 +143,7 @@ export async function AdminPage({
               <div className="flex flex-wrap items-center gap-2">
                 {!authState.hasPassword && (
                   <span className="rounded-md border border-[#e5e7eb] bg-[#f8fafc] px-3 py-2 text-xs font-medium text-[#64748b]">
-                    Sin ADMIN_PASSWORD
+                    Acceso sin contraseña
                   </span>
                 )}
                 {authState.hasPassword && (
@@ -200,7 +206,11 @@ export async function AdminPage({
                 <MuseumsAdmin museums={seed.museums} selectedId={id} />
               )}
               {section === "artistas" && (
-                <ArtistsAdmin artists={seed.artists} selectedId={id} />
+                <ArtistsAdmin
+                  artists={seed.artists}
+                  artworks={seed.artworks}
+                  selectedId={id}
+                />
               )}
               {section === "obras" && (
                 <ArtworksAdmin
@@ -247,7 +257,7 @@ function AdminLogin({
         </h1>
         <p className="mt-3 text-sm leading-6 text-[#64748b]">
           {isProduction
-            ? "Configurá ADMIN_PASSWORD para habilitar el panel."
+            ? "Definí una contraseña de administración para habilitar el panel."
             : "Ingresá la contraseña configurada para administrar el acervo."}
         </p>
         {error && (
@@ -311,9 +321,11 @@ function MuseumsAdmin({
 
 function ArtistsAdmin({
   artists,
+  artworks,
   selectedId,
 }: {
   artists: Artist[];
+  artworks: Artwork[];
   selectedId?: string;
 }) {
   const artist = getSelectedItem(artists, selectedId);
@@ -332,7 +344,12 @@ function ArtistsAdmin({
       }))}
     >
       {isCreating || artist ? (
-        <ArtistForm key={artist?.id ?? "new"} artist={artist} />
+        <ArtistForm
+          key={artist?.id ?? "new"}
+          artist={artist}
+          artists={artists}
+          artworks={artworks}
+        />
       ) : (
         <AdminEmptyState
           title="Seleccioná un artista"
@@ -607,7 +624,7 @@ function MuseumForm({ museum }: { museum: Museum | null }) {
             name="imageSrc"
             label="URL de foto del museo"
             defaultValue={getMuseumImageFieldValue(museum)}
-            placeholder="https://.../fachada-del-museo.jpg"
+            placeholder="URL pública de la foto"
           />
           <FileField name="imageFile" label="Subir foto del museo" />
           <TextField
@@ -652,12 +669,25 @@ function MuseumForm({ museum }: { museum: Museum | null }) {
   );
 }
 
-function ArtistForm({ artist }: { artist: Artist | null }) {
+function ArtistForm({
+  artist,
+  artists,
+  artworks,
+}: {
+  artist: Artist | null;
+  artists: Artist[];
+  artworks: Artwork[];
+}) {
+  const artistArtworks = artist
+    ? artworks.filter((artwork) => artwork.artistId === artist.id)
+    : artworks;
+  const relatedArtists = artists.filter((item) => item.id !== artist?.id);
+
   return (
     <div>
       <FormHeading
         title={artist ? "Editar artista" : "Nuevo artista"}
-        description="La bio y el retrato ya quedan listos para importar desde el Excel."
+        description="La ficha combina datos biográficos, lectura didáctica, timeline y relaciones editoriales."
       />
       <form
         action={upsertArtistAction}
@@ -674,10 +704,20 @@ function ArtistForm({ artist }: { artist: Artist | null }) {
             defaultValue={artist?.birthYear}
           />
           <TextField
+            name="birthPlace"
+            label="Lugar de nacimiento"
+            defaultValue={artist?.birthPlace}
+          />
+          <TextField
             name="deathYear"
             label="Fallecimiento"
             type="number"
             defaultValue={artist?.deathYear}
+          />
+          <TextField
+            name="deathPlace"
+            label="Lugar de fallecimiento"
+            defaultValue={artist?.deathPlace}
           />
           <TextField name="lifeDates" label="Fechas" defaultValue={artist?.lifeDates} />
           <TextField
@@ -685,12 +725,16 @@ function ArtistForm({ artist }: { artist: Artist | null }) {
             label="Nacionalidad"
             defaultValue={artist?.nationality}
           />
-          <TextField name="sourceUrl" label="Fuente" defaultValue={artist?.sourceUrl} />
+          <TextField
+            name="movement"
+            label="Movimiento"
+            defaultValue={artist?.movement}
+          />
           <TextField
             name="portraitSrc"
             label="Foto de perfil"
             defaultValue={artist?.portrait?.src}
-            placeholder="/artistas/nombre.jpg"
+            placeholder="URL pública o ruta del retrato"
           />
           <FileField name="portraitFile" label="Subir retrato" />
           <TextField
@@ -698,8 +742,99 @@ function ArtistForm({ artist }: { artist: Artist | null }) {
             label="Alt del retrato"
             defaultValue={artist?.portrait?.alt}
           />
+          <SelectField
+            name="heroArtworkId"
+            label="Obra hero"
+            defaultValue={artist?.heroArtworkId}
+            includeEmptyOption
+            required={false}
+            emptyLabel="Sin obra destacada seleccionada"
+            options={artistArtworks.map((artwork) => ({
+              value: artwork.id,
+              label: `${artwork.title} (${artwork.inventoryNumber})`,
+            }))}
+          />
+          <TextField
+            name="sourceUrl"
+            label="Fuente"
+            defaultValue={artist?.sourceUrl}
+          />
+          <TextField
+            name="collectionSourceUrl"
+            label="Fuente colección"
+            defaultValue={artist?.collectionSourceUrl}
+          />
         </div>
-        <TextAreaField name="biography" label="Biografía" defaultValue={artist?.biography} />
+        <CheckboxField
+          name="isPublished"
+          label="Publicado"
+          description="Si se desactiva, la ficha no aparece en el sitio público."
+          defaultChecked={artist?.isPublished !== false}
+        />
+        <TextAreaField
+          name="summary"
+          label="Resumen"
+          defaultValue={artist?.summary}
+          placeholder="Una síntesis breve para el hero y las vistas de búsqueda."
+        />
+        <TextAreaField
+          name="description"
+          label="Descripción"
+          defaultValue={artist?.description ?? artist?.biography}
+          placeholder="Biografía y lectura general del recorrido del artista."
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextAreaField
+            name="techniques"
+            label="Técnicas"
+            defaultValue={joinList(artist?.techniques)}
+            placeholder={"Óleo\nDibujo\nGrabado"}
+          />
+          <TextAreaField
+            name="themes"
+            label="Temas"
+            defaultValue={joinList(artist?.themes)}
+            placeholder={"Paisaje\nRetrato\nEscena histórica"}
+          />
+          <TextAreaField
+            name="influences"
+            label="Influencias"
+            defaultValue={joinList(artist?.influences)}
+            placeholder="Artistas, escuelas, viajes o tradiciones."
+          />
+          <TextAreaField
+            name="keyPeriods"
+            label="Períodos clave"
+            defaultValue={joinList(artist?.keyPeriods)}
+            placeholder={"Formación\nEtapa europea\nMadurez"}
+          />
+        </div>
+        <TextAreaField
+          name="timeline"
+          label="Línea de tiempo"
+          defaultValue={formatTimeline(artist?.timeline)}
+          placeholder={"Año | Hito | Descripción breve\n1911 | Premio | Obtiene una distinción"}
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextAreaField
+            name="featuredArtworkIds"
+            label={`Obras destacadas (${artistArtworks.length} disponibles)`}
+            defaultValue={joinList(artist?.featuredArtworkIds)}
+            placeholder={artistArtworks
+              .slice(0, 3)
+              .map((artwork) => artwork.id)
+              .join("\n")}
+          />
+          <TextAreaField
+            name="relatedArtistIds"
+            label={`Artistas relacionados (${relatedArtists.length} disponibles)`}
+            defaultValue={joinList(artist?.relatedArtistIds)}
+            placeholder={relatedArtists
+              .slice(0, 3)
+              .map((item) => item.id)
+              .join("\n")}
+          />
+        </div>
         <FormActions />
       </form>
       {artist && (
@@ -761,10 +896,18 @@ function ArtworkForm({
               label: museum.name,
             }))}
           />
-          <TextField name="year" label="Año" defaultValue={artwork?.year} />
+          <TextField
+            name="year"
+            label="Año"
+            defaultValue={artwork?.yearLabel ?? artwork?.year}
+          />
           <TextField name="technique" label="Técnica" defaultValue={artwork?.technique} />
           <TextField name="dimensions" label="Medidas" defaultValue={artwork?.dimensions} />
-          <TextField name="location" label="Ubicación" defaultValue={artwork?.location} />
+          <TextField
+            name="location"
+            label="Ubicación"
+            defaultValue={artwork?.locationNote ?? artwork?.location}
+          />
           <TextField
             name="exhibitionStatus"
             label="Exhibición"
@@ -774,7 +917,7 @@ function ArtworkForm({
           <TextField
             name="imageUrl"
             label="Imagen de obra"
-            defaultValue={artwork?.imageUrl}
+            defaultValue={artwork?.imageSrc ?? artwork?.imageUrl}
           />
           <FileField name="imageFile" label="Subir imagen de obra" />
         </div>
@@ -843,7 +986,7 @@ function ExhibitionForm({
           name="artworkIds"
           label={`Obras vinculadas (${artworks.length} disponibles)`}
           defaultValue={exhibition?.artworkIds.join("\n")}
-          placeholder="artwork-mnav-50"
+          placeholder="Un ID de obra por línea"
         />
         <FormActions />
       </form>
@@ -980,26 +1123,62 @@ function FileField({
   );
 }
 
+function CheckboxField({
+  name,
+  label,
+  description,
+  defaultChecked,
+}: {
+  name: string;
+  label: string;
+  description: string;
+  defaultChecked?: boolean;
+}) {
+  return (
+    <label className="flex items-start gap-3 rounded-md border border-[#d7dee8] bg-[#f8fafc] p-4">
+      <Input
+        name={name}
+        type="checkbox"
+        defaultChecked={defaultChecked}
+        className="mt-1 size-4 rounded border-[#b8c3d2]"
+      />
+      <span>
+        <span className="block text-sm font-semibold text-[#172033]">{label}</span>
+        <span className="mt-1 block text-sm leading-6 text-[#64748b]">
+          {description}
+        </span>
+      </span>
+    </label>
+  );
+}
+
 function SelectField({
   name,
   label,
   defaultValue,
   options,
+  includeEmptyOption,
+  emptyLabel = "Sin seleccionar",
+  required = true,
 }: {
   name: string;
   label: string;
   defaultValue?: string | null;
   options: Array<{ value: string; label: string }>;
+  includeEmptyOption?: boolean;
+  emptyLabel?: string;
+  required?: boolean;
 }) {
   return (
     <label className={labelClass}>
       {label}
       <select
         name={name}
-        defaultValue={defaultValue ?? options[0]?.value}
+        defaultValue={defaultValue ?? (includeEmptyOption ? "" : options[0]?.value)}
         className={`${fieldClass} px-3 outline-none focus-visible:ring-[3px]`}
-        required
+        required={required}
       >
+        {includeEmptyOption && <option value="">{emptyLabel}</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -1069,4 +1248,20 @@ function getMuseumImageFieldValue(museum: Museum | null) {
   const src = museum?.image.src?.trim() ?? "";
 
   return src.startsWith("/hero/home-artwork") ? "" : src;
+}
+
+function joinList(values?: string[] | null) {
+  return values?.join("\n") ?? "";
+}
+
+function formatTimeline(timeline?: ArtistTimelineItem[] | null) {
+  return (
+    timeline
+      ?.map((item) =>
+        [item.year, item.title, item.description]
+          .filter(Boolean)
+          .join(" | "),
+      )
+      .join("\n") ?? ""
+  );
 }

@@ -10,9 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const isHome = pathname === "/";
-  const isArtworkProfile = /^\/obras\/[^/]+$/.test(pathname);
-  const isOverlayHeader = isHome || isArtworkProfile;
+  const isOverlayHeader = isHeroOverlayPath(pathname);
   const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
@@ -41,7 +39,7 @@ export function SiteHeader() {
           ? cn(
               "fixed inset-x-0 text-white",
               hasScrolled
-                ? "bg-[#0d0d0d]/54 shadow-[0_14px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl"
+                ? "bg-[#0d0d0d]/62 shadow-[0_14px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl"
                 : "bg-transparent",
             )
           : "sticky bg-background/88 text-foreground backdrop-blur-xl",
@@ -78,5 +76,14 @@ export function SiteHeader() {
         <MainNav />
       </Container>
     </header>
+  );
+}
+
+function isHeroOverlayPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    /^\/obras\/[^/]+$/.test(pathname) ||
+    /^\/artistas\/[^/]+$/.test(pathname) ||
+    /^\/museos\/[^/]+$/.test(pathname)
   );
 }

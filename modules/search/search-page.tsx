@@ -24,11 +24,11 @@ export function SearchPage({ query, results }: SearchPageProps) {
             Buscar en Acervo
           </p>
           <h1 className="mt-4 font-serif text-5xl font-medium leading-[1.02] text-foreground sm:text-6xl">
-            Obras, artistas y museos en una primera capa real.
+            Obras, artistas y museos en un mismo recorrido.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            Esta busqueda ya consulta el recorte MNAV inicial: 1 museo, 100
-            obras y sus artistas vinculados.
+            Consultá el catálogo por nombre, título, técnica, institución o
+            palabras clave vinculadas al acervo.
           </p>
         </section>
 

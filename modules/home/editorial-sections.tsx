@@ -15,7 +15,7 @@ const features = [
     title: "Obras para mirar de cerca",
     kicker: "Seleccion editorial",
     description:
-      "Piezas destacadas para activar busquedas por tecnica, epoca y autoria.",
+      "Piezas para explorar por técnica, época, autoría y vínculos curatoriales.",
     href: "/obras",
     icon: Eye,
   },
@@ -23,7 +23,7 @@ const features = [
     title: "Exposiciones en agenda",
     kicker: "Actualidad cultural",
     description:
-      "Una entrada a muestras vigentes y proximas sedes para visitar.",
+      "Una entrada a muestras, sedes y recorridos culturales para visitar.",
     href: "/exposiciones",
     icon: CalendarDays,
   },
@@ -51,7 +51,7 @@ export function EditorialSections() {
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
               La home combina busqueda territorial con capas editoriales para
               que el usuario encuentre, compare y siga explorando sin quedarse
-              solo en la ubicacion.
+              solo en la ubicación.
             </p>
           </div>
 

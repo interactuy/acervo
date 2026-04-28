@@ -10,6 +10,7 @@ type ArtistPageProps = {
 };
 
 export const dynamicParams = true;
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const artists = await getArtists();
@@ -34,6 +35,7 @@ export async function generateMetadata({
   return {
     title: profile.artist.name,
     description: [
+      profile.artist.summary,
       profile.artist.lifeDates,
       profile.artist.nationality,
       `${profile.artworks.length} obras vinculadas`,

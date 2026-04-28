@@ -99,7 +99,7 @@ export async function getMuseumById(id: string): Promise<Museum | null> {
 }
 
 export async function getArtists(): Promise<Artist[]> {
-  return (await getAcervoSeed()).artists;
+  return (await getAcervoSeed()).artists.filter(isArtistPublished);
 }
 
 export async function getArtistById(id: string): Promise<Artist | null> {
@@ -115,13 +115,17 @@ export async function getArtistBySlug(slug: string): Promise<Artist | null> {
 }
 
 export async function getArtworks(): Promise<Artwork[]> {
-  return (await getAcervoSeed()).artworks;
+  return (await getAcervoSeed()).artworks.filter(isArtworkPublished);
 }
 
 export async function getArtworkById(id: string): Promise<Artwork | null> {
   const seed = await getAcervoSeed();
 
-  return seed.artworks.find((artwork) => artwork.id === id) ?? null;
+  return (
+    seed.artworks.find(
+      (artwork) => artwork.id === id && isArtworkPublished(artwork),
+    ) ?? null
+  );
 }
 
 export async function getArtworkBySlug(
@@ -205,11 +209,20 @@ export async function getArtistProfile(slug: string) {
   const seed = await getAcervoSeed();
   const artist = seed.artists.find((item) => item.slug === slug) ?? null;
 
-  if (!artist) {
+  if (!artist || !isArtistPublished(artist)) {
     return null;
   }
 
   const artworks = getArtworksByArtistIdFromSeed(seed, artist.id);
+  const allArtworks = getArtworksWithArtistsFromSeed(seed);
+  const artworkIds = new Set(artworks.map((artwork) => artwork.id));
+  const heroArtwork =
+    getArtworkByIdFromList(allArtworks, artist.heroArtworkId) ??
+    getArtworkByIdFromList(allArtworks, artist.featuredArtworkId) ??
+    artworks.find((artwork) => artwork.imageSrc ?? artwork.imageUrl) ??
+    artworks[0] ??
+    null;
+  const featuredArtworks = getFeaturedArtistArtworks(artist, artworks, heroArtwork);
   const museums = Array.from(
     new Map(
       artworks
@@ -218,11 +231,24 @@ export async function getArtistProfile(slug: string) {
         .map((museum) => [museum.id, museum]),
     ).values(),
   );
+  const exhibitions = seed.exhibitions.filter((exhibition) =>
+    exhibition.artworkIds.some((artworkId) => artworkIds.has(artworkId)),
+  );
+  const relatedArtists =
+    artist.relatedArtistIds
+      ?.map((artistId) => getArtistByIdFromSeed(seed, artistId))
+      .filter((relatedArtist): relatedArtist is Artist =>
+        Boolean(relatedArtist && isArtistPublished(relatedArtist)),
+      ) ?? [];
 
   return {
     artist,
     artworks,
+    featuredArtworks,
+    heroArtwork,
     museums,
+    exhibitions,
+    relatedArtists,
   };
 }
 
@@ -232,10 +258,12 @@ export async function getArtistsWithArtworkCounts(): Promise<
   const seed = await getAcervoSeed();
 
   return seed.artists
+    .filter(isArtistPublished)
     .map((artist) => ({
       ...artist,
       artworkCount: seed.artworks.filter(
-        (artwork) => artwork.artistId === artist.id,
+        (artwork) =>
+          artwork.artistId === artist.id && isArtworkPublished(artwork),
       ).length,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
@@ -282,9 +310,17 @@ export async function searchAcervo(query: string): Promise<SearchResult[]> {
     }));
 
   const artistResults = seed.artists
+    .filter(isArtistPublished)
     .filter((artist) =>
       includesQuery(
-        [artist.name, artist.lifeDates, artist.nationality],
+        [
+          artist.name,
+          artist.lifeDates,
+          artist.nationality,
+          artist.summary,
+          artist.description,
+          artist.movement,
+        ],
         normalizedQuery,
       ),
     )
@@ -294,7 +330,9 @@ export async function searchAcervo(query: string): Promise<SearchResult[]> {
       label: "Artista",
       title: artist.name,
       subtitle: artist.lifeDates ? artist.lifeDates : "Artista del acervo",
-      description: `${getArtworksByArtistIdFromSeed(seed, artist.id).length} obras vinculadas al MNAV`,
+      description:
+        artist.summary ??
+        `${getArtworksByArtistIdFromSeed(seed, artist.id).length} obras vinculadas al MNAV`,
       href: `/artistas/${artist.slug}`,
     }));
 
@@ -305,6 +343,7 @@ export async function searchAcervo(query: string): Promise<SearchResult[]> {
           artwork.title,
           artwork.inventoryNumber,
           artwork.technique,
+          artwork.yearLabel,
           artwork.year,
           artwork.artist?.name,
         ],
@@ -316,8 +355,12 @@ export async function searchAcervo(query: string): Promise<SearchResult[]> {
       type: "artwork",
       label: "Obra",
       title: artwork.title,
-      subtitle: artwork.artist?.name ?? "Autor no disponible",
-      description: [artwork.year, artwork.technique, artwork.location]
+      subtitle: artwork.artist?.name ?? "Autor sin registrar",
+      description: [
+        artwork.yearLabel ?? artwork.year,
+        artwork.technique,
+        artwork.locationNote ?? artwork.location,
+      ]
         .filter(Boolean)
         .join(" · "),
       href: `/obras/${artwork.slug}`,
@@ -374,11 +417,13 @@ function getArtworksWithArtistsFromSeed(seed: AcervoSeed): ArtworkWithArtist[] {
   const museumsById = new Map(seed.museums.map((museum) => [museum.id, museum]));
   const artistsById = new Map(seed.artists.map((artist) => [artist.id, artist]));
 
-  return seed.artworks.map((artwork) => ({
-    ...artwork,
-    artist: artistsById.get(artwork.artistId) ?? null,
-    museum: museumsById.get(artwork.museumId) ?? null,
-  }));
+  return seed.artworks
+    .filter(isArtworkPublished)
+    .map((artwork) => ({
+      ...artwork,
+      artist: artistsById.get(artwork.artistId) ?? null,
+      museum: museumsById.get(artwork.museumId) ?? null,
+    }));
 }
 
 function getArtworksByMuseumIdFromSeed(
@@ -395,7 +440,8 @@ function getArtistsByMuseumIdFromSeed(
   museumId: string,
 ): ArtistWithArtworkCount[] {
   const museumArtworks = seed.artworks.filter(
-    (artwork) => artwork.museumId === museumId,
+    (artwork) =>
+      artwork.museumId === museumId && isArtworkPublished(artwork),
   );
   const countsByArtistId = new Map<string, number>();
 
@@ -439,6 +485,47 @@ function getArtworksByArtistIdFromSeed(
   return getArtworksWithArtistsFromSeed(seed).filter(
     (artwork) => artwork.artistId === artistId,
   );
+}
+
+function getFeaturedArtistArtworks(
+  artist: Artist,
+  artworks: ArtworkWithArtist[],
+  heroArtwork: ArtworkWithArtist | null,
+) {
+  const selectedArtworks = artist.featuredArtworkIds
+    ?.map((artworkId) => getArtworkByIdFromList(artworks, artworkId))
+    .filter((artwork): artwork is ArtworkWithArtist => Boolean(artwork)) ?? [];
+  const fallbackArtworks = [
+    heroArtwork,
+    ...artworks.filter((artwork) => artwork.id !== heroArtwork?.id),
+  ].filter((artwork): artwork is ArtworkWithArtist => Boolean(artwork));
+
+  return Array.from(
+    new Map(
+      (selectedArtworks.length > 0 ? selectedArtworks : fallbackArtworks)
+        .slice(0, 6)
+        .map((artwork) => [artwork.id, artwork]),
+    ).values(),
+  );
+}
+
+function getArtworkByIdFromList(
+  artworks: ArtworkWithArtist[],
+  artworkId?: string | null,
+) {
+  if (!artworkId) {
+    return null;
+  }
+
+  return artworks.find((artwork) => artwork.id === artworkId) ?? null;
+}
+
+function isArtistPublished(artist: Artist) {
+  return artist.isPublished !== false;
+}
+
+function isArtworkPublished(artwork: Artwork) {
+  return artwork.isPublished !== false;
 }
 
 function includesQuery(values: Array<string | null | undefined>, query: string) {

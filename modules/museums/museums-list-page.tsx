@@ -16,10 +16,10 @@ export async function MuseumsListPage() {
               Museos
             </p>
             <h1 className="mt-4 font-serif text-5xl font-medium leading-[1.02] text-foreground sm:text-6xl">
-              Todos los museos cargados
+              Museos del acervo
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-              Lista completa de instituciones disponibles en el acervo.
+              Instituciones para explorar por territorio, colección y contexto.
             </p>
           </div>
           <Link

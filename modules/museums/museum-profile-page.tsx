@@ -139,12 +139,12 @@ export function MuseumProfilePage({
 
       <Container className="py-10 sm:py-14">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard icon={Palette} value={artworks.length} label="obras cargadas" />
+          <StatCard icon={Palette} value={artworks.length} label="obras del acervo" />
           <StatCard icon={Users} value={artists.length} label="artistas vinculados" />
           <StatCard
             icon={CalendarDays}
             value={exhibitions.length}
-            label="exposiciones preparadas"
+            label="exposiciones relacionadas"
           />
         </div>
 
@@ -167,11 +167,11 @@ export function MuseumProfilePage({
                 Obras relacionadas
               </p>
               <h2 className="mt-3 font-serif text-4xl font-medium leading-tight text-foreground">
-                Primer recorte MNAV
+                Selección del MNAV
               </h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              12 visibles de entrada · {artworks.length} cargadas
+              12 visibles de entrada · {artworks.length} obras registradas
             </p>
           </div>
 
@@ -184,7 +184,7 @@ export function MuseumProfilePage({
               Artistas
             </p>
             <h2 className="mt-3 font-serif text-4xl font-medium leading-tight text-foreground">
-              Autores del recorte
+              Autores presentes
             </h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {featuredArtists.map((artist) => (
@@ -205,7 +205,7 @@ export function MuseumProfilePage({
                         {artist.name}
                       </span>
                       <span className="mt-2 block text-sm text-muted-foreground">
-                        {artist.lifeDates ?? "Fechas no disponibles"}
+                        {artist.lifeDates ?? "Fechas no registradas"}
                       </span>
                       <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
                         {artist.artworkCount} obras
@@ -226,7 +226,7 @@ export function MuseumProfilePage({
               Exposiciones
             </p>
             <h2 className="mt-3 font-serif text-3xl font-medium leading-tight text-foreground">
-              Estructura lista
+              Recorridos vinculados
             </h2>
             <div className="mt-5 grid gap-4">
               {exhibitions.map((exhibition) => (

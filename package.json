@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed:mnav": "node scripts/import-mnav-collection.mjs",
-    "seed:supabase": "node scripts/push-acervo-seed.mjs"
+    "seed:supabase": "node scripts/push-acervo-seed.mjs",
+    "import:artists": "node scripts/import-mnav-artists.mjs",
+    "import:artworks": "node scripts/import-mnav-artworks.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

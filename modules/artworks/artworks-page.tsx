@@ -13,11 +13,12 @@ export async function ArtworksPage() {
             Obras
           </p>
           <h1 className="mt-4 font-serif text-5xl font-medium leading-[1.02] text-foreground sm:text-6xl">
-            Primer recorte de obras MNAV
+            Obras del acervo MNAV
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            Una carga inicial de {artworks.length} obras reales, preparada para
-            crecer luego hacia el acervo completo.
+            {artworks.length} registros con artistas, técnicas, fechas,
+            imágenes y datos de catalogación del Museo Nacional de Artes
+            Visuales.
           </p>
         </section>
 

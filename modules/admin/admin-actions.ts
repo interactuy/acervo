@@ -184,11 +184,14 @@ export async function upsertArtistAction(formData: FormData) {
     id,
   );
   const portraitSrc = uploadedPortraitSrc ?? getFormString(formData, "portraitSrc");
+  const description = optionalString(formData, "description");
   const artist: Artist = {
     id,
     slug,
     name,
-    biography: optionalString(formData, "biography"),
+    summary: optionalString(formData, "summary"),
+    description,
+    biography: description,
     portrait: portraitSrc
       ? {
           src: portraitSrc,
@@ -197,9 +200,25 @@ export async function upsertArtistAction(formData: FormData) {
       : null,
     birthYear,
     deathYear,
+    birthPlace: optionalString(formData, "birthPlace"),
+    deathPlace: optionalString(formData, "deathPlace"),
     lifeDates: optionalString(formData, "lifeDates") ?? buildLifeDates(birthYear, deathYear),
     nationality: optionalString(formData, "nationality"),
+    movement: optionalString(formData, "movement"),
+    techniques: splitList(getFormString(formData, "techniques")),
+    themes: splitList(getFormString(formData, "themes")),
+    influences: splitList(getFormString(formData, "influences")),
+    keyPeriods: splitList(getFormString(formData, "keyPeriods")),
+    timeline: parseTimeline(getFormString(formData, "timeline")),
+    heroArtworkId: optionalString(formData, "heroArtworkId"),
+    featuredArtworkId: optionalString(formData, "heroArtworkId"),
+    featuredArtworkIds: splitList(getFormString(formData, "featuredArtworkIds")),
+    relatedArtistIds: splitList(getFormString(formData, "relatedArtistIds")).filter(
+      (relatedArtistId) => relatedArtistId !== id,
+    ),
+    collectionSourceUrl: optionalString(formData, "collectionSourceUrl"),
     sourceUrl: getFormString(formData, "sourceUrl"),
+    isPublished: formData.get("isPublished") === "on",
   };
 
   upsertById(seed.artists, artist);
@@ -254,6 +273,9 @@ export async function upsertArtworkAction(formData: FormData) {
     "obras",
     id,
   );
+  const year = optionalString(formData, "year");
+  const location = optionalString(formData, "location");
+  const imageUrl = uploadedImageUrl ?? optionalString(formData, "imageUrl");
   const artwork: Artwork = {
     id,
     slug,
@@ -263,11 +285,14 @@ export async function upsertArtworkAction(formData: FormData) {
     museumId: getRequiredString(formData, "museumId", "Elegí un museo."),
     technique: optionalString(formData, "technique"),
     dimensions: optionalString(formData, "dimensions"),
-    year: optionalString(formData, "year"),
-    location: optionalString(formData, "location"),
+    year,
+    yearLabel: year,
+    location,
+    locationNote: location,
     exhibitionStatus: optionalString(formData, "exhibitionStatus"),
     sourceUrl: getFormString(formData, "sourceUrl"),
-    imageUrl: uploadedImageUrl ?? optionalString(formData, "imageUrl"),
+    imageUrl,
+    imageSrc: imageUrl,
   };
 
   upsertById(seed.artworks, artwork);
@@ -526,6 +551,26 @@ function splitList(value: string) {
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function parseTimeline(value: string) {
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item, index) => {
+      const [year, title, ...descriptionParts] = item
+        .split("|")
+        .map((part) => part.trim());
+      const timelineTitle = title || year;
+
+      return {
+        id: `${slugify([year, timelineTitle].filter(Boolean).join("-")) || "hito"}-${index + 1}`,
+        year: title ? year || null : null,
+        title: timelineTitle,
+        description: descriptionParts.join(" | ") || null,
+      };
+    });
 }
 
 function buildLifeDates(birthYear: number | null, deathYear: number | null) {

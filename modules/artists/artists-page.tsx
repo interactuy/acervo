@@ -16,8 +16,8 @@ export async function ArtistsPage() {
             Autores vinculados al MNAV
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            {artists.length} artistas aparecen en esta primera carga de prueba
-            con obras del Museo Nacional de Artes Visuales.
+            {artists.length} artistas con obras registradas en el Museo
+            Nacional de Artes Visuales.
           </p>
         </section>
 

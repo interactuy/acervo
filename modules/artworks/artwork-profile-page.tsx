@@ -15,12 +15,14 @@ export function ArtworkProfilePage({
   artwork,
   relatedArtworks,
 }: ArtworkProfilePageProps) {
-  const imageSrc = artwork.imageUrl ?? "/hero/home-artwork-01.png";
-  const artistName = artwork.artist?.name ?? "Autor no disponible";
-  const museumName = artwork.museum?.name ?? "Museo no disponible";
+  const imageSrc = artwork.imageSrc ?? artwork.imageUrl ?? "/hero/home-artwork-01.png";
+  const artistName = artwork.artist?.name ?? "Autor sin registrar";
+  const museumName = artwork.museum?.name ?? "Institución sin registrar";
+  const year = artwork.yearLabel ?? artwork.year;
+  const location = artwork.locationNote ?? artwork.location;
   const heroDetails = [
     artistName,
-    artwork.year,
+    year,
     museumName,
     artwork.technique,
   ].filter(Boolean);
@@ -28,8 +30,8 @@ export function ArtworkProfilePage({
     { label: "Inventario", value: artwork.inventoryNumber },
     { label: "Técnica", value: artwork.technique },
     { label: "Medidas", value: artwork.dimensions },
-    { label: "Fecha", value: artwork.year },
-    { label: "Ubicación", value: artwork.location },
+    { label: "Fecha", value: year },
+    { label: "Ubicación", value: location },
     { label: "Exhibición", value: artwork.exhibitionStatus },
   ].filter((item): item is { label: string; value: string } =>
     Boolean(item.value),
@@ -133,7 +135,7 @@ export function ArtworkProfilePage({
                 ? [artwork.museum.neighborhood, artwork.museum.city]
                     .filter(Boolean)
                     .join(" · ")
-                : "Institución no disponible"
+                : "Institución sin registrar"
             }
             href={artwork.museum ? `/museos/${artwork.museum.slug}` : null}
           />
