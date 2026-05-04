@@ -11,6 +11,8 @@ import type { Json } from "@/types/database";
 import type {
   AcervoSeed,
   Artist,
+  ArtistLinkedMuseum,
+  ArtistPreviewArtwork,
   ArtistWithArtworkCount,
   Artwork,
   ArtworkWithArtist,
@@ -183,25 +185,36 @@ export async function getMuseumProfile(slug: string) {
 
 export async function getArtworkProfile(slug: string) {
   const seed = await getAcervoSeed();
-  const artwork =
-    getArtworksWithArtistsFromSeed(seed).find((item) => item.slug === slug) ??
-    null;
+  const allArtworks = getArtworksWithArtistsFromSeed(seed);
+  const artwork = allArtworks.find((item) => item.slug === slug) ?? null;
 
   if (!artwork) {
     return null;
   }
 
-  const relatedArtworks = getArtworksWithArtistsFromSeed(seed)
+  const relatedArtworks = allArtworks
     .filter(
       (relatedArtwork) =>
         relatedArtwork.artistId === artwork.artistId &&
         relatedArtwork.id !== artwork.id,
     )
     .slice(0, 6);
+  const sameMuseumArtworks = allArtworks
+    .filter(
+      (relatedArtwork) =>
+        relatedArtwork.museumId === artwork.museumId &&
+        relatedArtwork.id !== artwork.id,
+    )
+    .slice(0, 6);
+  const exhibitions = seed.exhibitions.filter((exhibition) =>
+    exhibition.artworkIds.includes(artwork.id),
+  );
 
   return {
     artwork,
     relatedArtworks,
+    sameMuseumArtworks,
+    exhibitions,
   };
 }
 
@@ -256,15 +269,30 @@ export async function getArtistsWithArtworkCounts(): Promise<
   ArtistWithArtworkCount[]
 > {
   const seed = await getAcervoSeed();
+  const publishedArtworks = seed.artworks.filter(isArtworkPublished);
+  const museumsById = new Map(seed.museums.map((museum) => [museum.id, museum]));
+  const artistArtworkCounts = new Map<string, number>();
+
+  publishedArtworks.forEach((artwork) => {
+    artistArtworkCounts.set(
+      artwork.artistId,
+      (artistArtworkCounts.get(artwork.artistId) ?? 0) + 1,
+    );
+  });
 
   return seed.artists
     .filter(isArtistPublished)
     .map((artist) => ({
       ...artist,
-      artworkCount: seed.artworks.filter(
-        (artwork) =>
-          artwork.artistId === artist.id && isArtworkPublished(artwork),
-      ).length,
+      artworkCount: artistArtworkCounts.get(artist.id) ?? 0,
+      primaryDiscipline: getArtistPrimaryDiscipline(publishedArtworks, artist.id),
+      disciplines: getArtistDisciplines(publishedArtworks, artist.id),
+      linkedMuseums: getArtistLinkedMuseums(
+        publishedArtworks,
+        museumsById,
+        artist.id,
+      ),
+      previewArtworks: getArtistPreviewArtworks(publishedArtworks, artist.id),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
@@ -439,6 +467,7 @@ function getArtistsByMuseumIdFromSeed(
   seed: AcervoSeed,
   museumId: string,
 ): ArtistWithArtworkCount[] {
+  const museumsById = new Map(seed.museums.map((museum) => [museum.id, museum]));
   const museumArtworks = seed.artworks.filter(
     (artwork) =>
       artwork.museumId === museumId && isArtworkPublished(artwork),
@@ -453,7 +482,7 @@ function getArtistsByMuseumIdFromSeed(
   });
 
   return Array.from(countsByArtistId.entries())
-    .map(([artistId, artworkCount]) => {
+    .map<ArtistWithArtworkCount | null>(([artistId, artworkCount]) => {
       const artist = getArtistByIdFromSeed(seed, artistId);
 
       if (!artist) {
@@ -463,10 +492,165 @@ function getArtistsByMuseumIdFromSeed(
       return {
         ...artist,
         artworkCount,
+        primaryDiscipline: getArtistPrimaryDiscipline(museumArtworks, artist.id),
+        disciplines: getArtistDisciplines(museumArtworks, artist.id),
+        linkedMuseums: getArtistLinkedMuseums(
+          museumArtworks,
+          museumsById,
+          artist.id,
+        ),
+        previewArtworks: getArtistPreviewArtworks(museumArtworks, artist.id),
       };
     })
     .filter((artist): artist is ArtistWithArtworkCount => Boolean(artist))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+function getArtistPrimaryDiscipline(
+  artworks: Artwork[],
+  artistId: string,
+): string | null {
+  const disciplineCounts = new Map<string, number>();
+
+  artworks
+    .filter((artwork) => artwork.artistId === artistId)
+    .forEach((artwork) => {
+      const discipline = getDisciplineFromTechnique(artwork.technique);
+
+      if (discipline) {
+        disciplineCounts.set(
+          discipline,
+          (disciplineCounts.get(discipline) ?? 0) + 1,
+        );
+      }
+    });
+
+  return (
+    Array.from(disciplineCounts.entries()).sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"),
+    )[0]?.[0] ?? null
+  );
+}
+
+function getArtistDisciplines(artworks: Artwork[], artistId: string): string[] {
+  return Array.from(
+    new Set(
+      artworks
+        .filter((artwork) => artwork.artistId === artistId)
+        .map((artwork) => getDisciplineFromTechnique(artwork.technique))
+        .filter((discipline): discipline is string => Boolean(discipline)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "es"));
+}
+
+function getArtistLinkedMuseums(
+  artworks: Artwork[],
+  museumsById: Map<string, Museum>,
+  artistId: string,
+): ArtistLinkedMuseum[] {
+  return Array.from(
+    new Map(
+      artworks
+        .filter((artwork) => artwork.artistId === artistId)
+        .map((artwork) => museumsById.get(artwork.museumId))
+        .filter((museum): museum is Museum => Boolean(museum))
+        .map((museum) => [
+          museum.id,
+          {
+            id: museum.id,
+            slug: museum.slug,
+            name: museum.name,
+          },
+        ]),
+    ).values(),
+  ).sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+function getDisciplineFromTechnique(
+  technique: string | null | undefined,
+): string | null {
+  const normalizedTechnique = normalizeSearchText(technique ?? "");
+
+  if (!normalizedTechnique) {
+    return null;
+  }
+
+  if (
+    normalizedTechnique.includes("fotografia") ||
+    normalizedTechnique.includes("foto")
+  ) {
+    return "Fotografía";
+  }
+
+  if (
+    normalizedTechnique.includes("escultura") ||
+    normalizedTechnique.includes("bronce") ||
+    normalizedTechnique.includes("yeso") ||
+    normalizedTechnique.includes("madera") ||
+    normalizedTechnique.includes("ceramica") ||
+    normalizedTechnique.includes("terracota") ||
+    normalizedTechnique.includes("hierro") ||
+    normalizedTechnique.includes("piedra")
+  ) {
+    return "Escultura";
+  }
+
+  if (
+    normalizedTechnique.includes("grabado") ||
+    normalizedTechnique.includes("aguafuerte") ||
+    normalizedTechnique.includes("litografia") ||
+    normalizedTechnique.includes("xilografia") ||
+    normalizedTechnique.includes("serigrafia")
+  ) {
+    return "Grabado";
+  }
+
+  if (
+    normalizedTechnique.includes("dibujo") ||
+    normalizedTechnique.includes("lapiz") ||
+    normalizedTechnique.includes("carbon") ||
+    normalizedTechnique.includes("tinta") ||
+    normalizedTechnique.includes("pastel")
+  ) {
+    return "Dibujo";
+  }
+
+  if (
+    normalizedTechnique.includes("oleo") ||
+    normalizedTechnique.includes("acrilico") ||
+    normalizedTechnique.includes("acuarela") ||
+    normalizedTechnique.includes("tempera") ||
+    normalizedTechnique.includes("gouache") ||
+    normalizedTechnique.includes("pintura")
+  ) {
+    return "Pintura";
+  }
+
+  return "Otros medios";
+}
+
+function getArtistPreviewArtworks(
+  artworks: Artwork[],
+  artistId: string,
+): ArtistPreviewArtwork[] {
+  return artworks
+    .filter((artwork) => artwork.artistId === artistId)
+    .map((artwork) => ({
+      artwork,
+      imageSrc: artwork.imageSrc ?? artwork.imageUrl ?? null,
+    }))
+    .filter(
+      (item): item is { artwork: Artwork; imageSrc: string } =>
+        Boolean(item.imageSrc),
+    )
+    .slice(0, 3)
+    .map(({ artwork, imageSrc }) => ({
+      id: artwork.id,
+      title: artwork.title,
+      imageSrc,
+      year: artwork.yearLabel ?? artwork.year,
+      technique: artwork.technique,
+    }));
 }
 
 function getExhibitionsByMuseumIdFromSeed(

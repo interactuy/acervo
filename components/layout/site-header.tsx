@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function SiteHeader() {
   const pathname = usePathname();
   const isOverlayHeader = isHeroOverlayPath(pathname);
+  const usesWideHeader = pathname === "/artistas";
   const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,12 @@ export function SiteHeader() {
           : "sticky bg-background/88 text-foreground backdrop-blur-xl",
       )}
     >
-      <Container className="flex min-h-16 items-center justify-between gap-4 py-3">
+      <Container
+        className={cn(
+          "flex min-h-16 items-center justify-between gap-4 py-3",
+          usesWideHeader && "max-w-[92rem]",
+        )}
+      >
         <Link
           href="/"
           className={cn(
@@ -82,6 +88,7 @@ export function SiteHeader() {
 function isHeroOverlayPath(pathname: string) {
   return (
     pathname === "/" ||
+    pathname === "/artistas" ||
     /^\/obras\/[^/]+$/.test(pathname) ||
     /^\/artistas\/[^/]+$/.test(pathname) ||
     /^\/museos\/[^/]+$/.test(pathname)

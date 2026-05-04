@@ -285,16 +285,23 @@ export function MuseumsBrowser({ museums }: MuseumsBrowserProps) {
       </div>
 
       {filteredMuseums.length > 0 ? (
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {filteredMuseums.map((museum, index) => (
-            <MuseumCard
-              key={museum.id}
-              museum={museum}
-              variant="compact"
-              imagePriority={index < 3}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <p>
+              Mostrando {filteredMuseums.length} de {museums.length}
+            </p>
+          </div>
+          <div className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {filteredMuseums.map((museum, index) => (
+              <MuseumCard
+                key={museum.id}
+                museum={museum}
+                variant="compact"
+                imagePriority={index < 3}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="mt-8 rounded-[1.2rem] bg-card/78 p-8 shadow-[0_18px_60px_rgba(23,25,22,0.05)]">
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">

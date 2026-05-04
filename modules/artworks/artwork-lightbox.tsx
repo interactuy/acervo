@@ -9,12 +9,14 @@ type ArtworkLightboxProps = {
   imageSrc: string;
   title: string;
   artistName?: string | null;
+  year?: string | null;
 };
 
 export function ArtworkLightbox({
   imageSrc,
   title,
   artistName,
+  year,
 }: ArtworkLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const lightbox = (
@@ -23,6 +25,7 @@ export function ArtworkLightbox({
       aria-modal="true"
       aria-label={`Vista ampliada de ${title}`}
       className="fixed inset-0 z-[999] bg-[#030303] text-white"
+      onClick={() => setIsOpen(false)}
     >
       <button
         type="button"
@@ -34,23 +37,33 @@ export function ArtworkLightbox({
       </button>
 
       <div className="flex min-h-dvh flex-col">
-        <div className="relative flex-1">
-          <Image
-            src={imageSrc}
-            alt={title}
-            fill
-            sizes="100vw"
-            priority
-            unoptimized={imageSrc.startsWith("http")}
-            className="object-contain p-4 sm:p-8 lg:p-10"
-          />
+        <div className="relative flex-1 p-4 sm:p-8 lg:p-10">
+          <div
+            className="relative h-full w-full"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Image
+              src={imageSrc}
+              alt={title}
+              fill
+              sizes="100vw"
+              priority
+              unoptimized={imageSrc.startsWith("http")}
+              className="object-contain"
+            />
+          </div>
         </div>
-        <div className="px-4 pb-5 pt-2 text-center sm:px-8 sm:pb-7">
+        <div
+          className="px-4 pb-5 pt-2 text-center sm:px-8 sm:pb-7"
+          onClick={(event) => event.stopPropagation()}
+        >
           <p className="font-serif text-2xl font-medium leading-tight sm:text-3xl">
             {title}
           </p>
-          {artistName && (
-            <p className="mt-2 text-sm text-white/62">{artistName}</p>
+          {(artistName || year) && (
+            <p className="mt-2 text-sm text-white/62">
+              {[artistName, year].filter(Boolean).join(" · ")}
+            </p>
           )}
         </div>
       </div>
@@ -87,7 +100,7 @@ export function ArtworkLightbox({
         onClick={() => setIsOpen(true)}
       >
         <Maximize2 className="size-4" aria-hidden="true" />
-        Ampliar obra
+        Ver en pantalla completa
       </button>
 
       {isOpen && createPortal(lightbox, document.body)}

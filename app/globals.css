@@ -104,6 +104,23 @@ a {
   opacity: 1;
 }
 
+@keyframes artist-constellation-drift {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    opacity: 0.74;
+    transform: translate3d(8px, -10px, 0);
+  }
+}
+
+.artist-constellation-name {
+  animation: artist-constellation-drift 12s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-card-rise {
     animation: none;
@@ -115,5 +132,9 @@ a {
 
   .home-hero-image:not(:first-child) {
     opacity: 0;
+  }
+
+  .artist-constellation-name {
+    animation: none;
   }
 }

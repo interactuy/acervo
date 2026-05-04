@@ -84,6 +84,20 @@ export type ArtistTimelineItem = {
   description?: string | null;
 };
 
+export type ArtistPreviewArtwork = {
+  id: string;
+  title: string;
+  imageSrc: string;
+  year: string | null;
+  technique: string | null;
+};
+
+export type ArtistLinkedMuseum = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
 export type Artwork = {
   id: string;
   externalId?: string | null;
@@ -141,6 +155,10 @@ export type ArtworkWithArtist = Artwork & {
 
 export type ArtistWithArtworkCount = Artist & {
   artworkCount: number;
+  primaryDiscipline: string | null;
+  disciplines: string[];
+  linkedMuseums: ArtistLinkedMuseum[];
+  previewArtworks: ArtistPreviewArtwork[];
 };
 
 export type SearchResultType = "museum" | "artist" | "artwork";

@@ -105,6 +105,7 @@ export function MainNav() {
 function isHeroOverlayPath(pathname: string) {
   return (
     pathname === "/" ||
+    pathname === "/artistas" ||
     /^\/obras\/[^/]+$/.test(pathname) ||
     /^\/artistas\/[^/]+$/.test(pathname) ||
     /^\/museos\/[^/]+$/.test(pathname)
